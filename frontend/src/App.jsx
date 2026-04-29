@@ -106,6 +106,148 @@ function MetricEditor({ subscription, draft, onChange, onSave, isSaving }) {
   );
 }
 
+function OrganizationEditor({ organization, onSave, isSaving }) {
+  const [form, setForm] = useState({
+    organization_name: organization.name || '',
+    slug: organization.slug || '',
+    contact_email: organization.contact_email || '',
+    contact_phone: organization.contact_phone || ''
+  });
+
+  useEffect(() => {
+    setForm({
+      organization_name: organization.name || '',
+      slug: organization.slug || '',
+      contact_email: organization.contact_email || '',
+      contact_phone: organization.contact_phone || ''
+    });
+  }, [organization]);
+
+  return (
+    <div className="editor-card">
+      <div className="editor-head">
+        <div>
+          <div className="eyebrow">Organizasyon Ayarları</div>
+          <strong>{organization.name}</strong>
+        </div>
+      </div>
+      <div className="form-grid two editor-form">
+        <label>
+          <span>Organizasyon</span>
+          <input value={form.organization_name} onChange={(event) => setForm({ ...form, organization_name: event.target.value })} />
+        </label>
+        <label>
+          <span>Slug</span>
+          <input value={form.slug} onChange={(event) => setForm({ ...form, slug: event.target.value })} />
+        </label>
+        <label>
+          <span>İletişim E-postası</span>
+          <input type="email" value={form.contact_email} onChange={(event) => setForm({ ...form, contact_email: event.target.value })} />
+        </label>
+        <label>
+          <span>Telefon</span>
+          <input value={form.contact_phone} onChange={(event) => setForm({ ...form, contact_phone: event.target.value })} />
+        </label>
+      </div>
+      <div className="editor-actions">
+        <button type="button" className="secondary-button" onClick={() => onSave(organization.id, form)} disabled={isSaving}>
+          {isSaving ? 'Kaydediliyor...' : 'Organizasyonu Güncelle'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function IntegrationEditor({ integration, onSave, isSaving }) {
+  const [form, setForm] = useState({
+    base_url: integration.base_url || '',
+    health_path: integration.health_path || '/health',
+    login_path: integration.login_path || '/api/v1/auth/login',
+    me_path: integration.me_path || '/api/v1/auth/me',
+    auth_type: integration.auth_type || 'none',
+    auth_value: integration.auth_value || '',
+    login_email: integration.login_email || '',
+    login_password: '',
+    sync_type: integration.sync_type || 'none'
+  });
+
+  useEffect(() => {
+    setForm({
+      base_url: integration.base_url || '',
+      health_path: integration.health_path || '/health',
+      login_path: integration.login_path || '/api/v1/auth/login',
+      me_path: integration.me_path || '/api/v1/auth/me',
+      auth_type: integration.auth_type || 'none',
+      auth_value: integration.auth_value || '',
+      login_email: integration.login_email || '',
+      login_password: '',
+      sync_type: integration.sync_type || 'none'
+    });
+  }, [integration]);
+
+  return (
+    <div className="editor-card editor-card-soft">
+      <div className="editor-head">
+        <div>
+          <div className="eyebrow">Entegrasyon Düzenle</div>
+          <strong>{integration.base_url}</strong>
+        </div>
+      </div>
+      <div className="form-grid two editor-form">
+        <label>
+          <span>API Base URL</span>
+          <input value={form.base_url} onChange={(event) => setForm({ ...form, base_url: event.target.value })} />
+        </label>
+        <label>
+          <span>Health Path</span>
+          <input value={form.health_path} onChange={(event) => setForm({ ...form, health_path: event.target.value })} />
+        </label>
+        <label>
+          <span>Login Path</span>
+          <input value={form.login_path} onChange={(event) => setForm({ ...form, login_path: event.target.value })} />
+        </label>
+        <label>
+          <span>Me Path</span>
+          <input value={form.me_path} onChange={(event) => setForm({ ...form, me_path: event.target.value })} />
+        </label>
+        <label>
+          <span>Login E-postası</span>
+          <input type="email" value={form.login_email} onChange={(event) => setForm({ ...form, login_email: event.target.value })} />
+        </label>
+        <label>
+          <span>Yeni Login Şifresi</span>
+          <input type="password" value={form.login_password} onChange={(event) => setForm({ ...form, login_password: event.target.value })} placeholder="Boş bırakırsanız değişmez" />
+        </label>
+        <label>
+          <span>Auth Type</span>
+          <select value={form.auth_type} onChange={(event) => setForm({ ...form, auth_type: event.target.value })}>
+            <option value="none">None</option>
+            <option value="bearer">Bearer</option>
+            <option value="api_key">API Key</option>
+          </select>
+        </label>
+        <label>
+          <span>Auth Value</span>
+          <input value={form.auth_value} onChange={(event) => setForm({ ...form, auth_value: event.target.value })} placeholder="Bearer token veya API key" />
+        </label>
+        <label>
+          <span>Senkronizasyon Tipi</span>
+          <select value={form.sync_type} onChange={(event) => setForm({ ...form, sync_type: event.target.value })}>
+            <option value="none">Senkronizasyon yok</option>
+            <option value="mobilkiratakip_property_management">MobilKiraTakip kullanım senkronizasyonu</option>
+          </select>
+        </label>
+      </div>
+      <div className="editor-note">Şifre alanı yalnızca yeni bir değer yazarsanız güncellenir.</div>
+      <div className="editor-actions">
+        <button type="button" className="secondary-button" onClick={() => onSave(integration.id, form)} disabled={isSaving}>
+          {isSaving ? 'Kaydediliyor...' : 'Entegrasyonu Güncelle'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function OnboardingForm({ templates, plans, onCreate, isSaving }) {
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [selectedPlanId, setSelectedPlanId] = useState('');
@@ -354,6 +496,8 @@ export default function App() {
   const [loading, setLoading] = useState(Boolean(token));
   const [error, setError] = useState('');
   const [usageDrafts, setUsageDrafts] = useState({});
+  const [savingOrganizationId, setSavingOrganizationId] = useState('');
+  const [savingIntegrationId, setSavingIntegrationId] = useState('');
   const [savingSubscriptionId, setSavingSubscriptionId] = useState('');
   const [probingConnectionId, setProbingConnectionId] = useState('');
   const [syncingConnectionId, setSyncingConnectionId] = useState('');
@@ -450,6 +594,56 @@ export default function App() {
       setError(requestError.message);
     } finally {
       setSavingSubscriptionId('');
+    }
+  };
+
+  const saveOrganizationSettings = async (organizationId, payload) => {
+    setSavingOrganizationId(organizationId);
+    setError('');
+    try {
+      const response = await authorizedRequest(`/organizations/${organizationId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload)
+      });
+      const nextOrganization = response.data;
+      setOrganizations((current) => current.map((organization) => (
+        organization.id === organizationId
+          ? { ...organization, ...nextOrganization }
+          : organization
+      )));
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setSavingOrganizationId('');
+    }
+  };
+
+  const saveIntegrationSettings = async (integrationId, payload) => {
+    setSavingIntegrationId(integrationId);
+    setError('');
+    try {
+      const body = { ...payload };
+      if (!body.login_password) {
+        delete body.login_password;
+      }
+
+      const response = await authorizedRequest(`/integrations/${integrationId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(body)
+      });
+      const nextIntegration = response.data;
+      setOrganizations((current) => current.map((organization) => ({
+        ...organization,
+        subscriptions: organization.subscriptions.map((subscription) => (
+          subscription.integration?.id === integrationId
+            ? { ...subscription, integration: { ...subscription.integration, ...nextIntegration } }
+            : subscription
+        ))
+      })));
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setSavingIntegrationId('');
     }
   };
 
@@ -779,6 +973,13 @@ export default function App() {
                             <details className="org-details">
                               <summary>Abonelik, entegrasyon ve fatura detaylarını aç</summary>
                               <div className="subscription-stack">
+                                <div className="settings-grid">
+                                  <OrganizationEditor
+                                    organization={organization}
+                                    onSave={saveOrganizationSettings}
+                                    isSaving={savingOrganizationId === organization.id}
+                                  />
+                                </div>
                                 {organization.subscriptions.map((subscription) => (
                                   <div className="subscription-card" key={subscription.id}>
                                     <div className="subscription-head">
@@ -800,28 +1001,35 @@ export default function App() {
                                     />
 
                                     {subscription.integration && (
-                                      <div className="integration-box">
-                                        <div>
-                                          <div className="eyebrow">API Entegrasyonu</div>
-                                          <strong>{subscription.integration.base_url}</strong>
-                                          <div className="integration-meta">{subscription.integration.health_path} • {subscription.integration.last_health_message || 'Health-check yok'}</div>
-                                          <div className="integration-meta">Login: {subscription.integration.login_email || 'tanımsız'} • Sync: {subscription.integration.sync_type || 'none'}</div>
-                                        </div>
-                                        <div className="integration-actions">
-                                          <span className={`status-pill integration-${subscription.integration.status}`}>{subscription.integration.status}</span>
-                                          <div className="action-wrap">
-                                            <button type="button" className="ghost-button" onClick={() => probeConnection(subscription.integration.id)} disabled={probingConnectionId === subscription.integration.id}>
-                                              {probingConnectionId === subscription.integration.id ? 'Test ediliyor...' : 'Health Probe'}
-                                            </button>
-                                            <button type="button" className="ghost-button" onClick={() => probeConnection(subscription.integration.id, 'login')} disabled={probingConnectionId === subscription.integration.id}>
-                                              {probingConnectionId === subscription.integration.id ? 'Login deneniyor...' : 'Login Probe'}
-                                            </button>
-                                            <button type="button" className="secondary-button" onClick={() => syncConnection(subscription.integration.id)} disabled={syncingConnectionId === subscription.integration.id}>
-                                              {syncingConnectionId === subscription.integration.id ? 'Senkronize ediliyor...' : 'Tenant Sync'}
-                                            </button>
+                                      <Fragment>
+                                        <div className="integration-box">
+                                          <div>
+                                            <div className="eyebrow">API Entegrasyonu</div>
+                                            <strong>{subscription.integration.base_url}</strong>
+                                            <div className="integration-meta">{subscription.integration.health_path} • {subscription.integration.last_health_message || 'Health-check yok'}</div>
+                                            <div className="integration-meta">Login: {subscription.integration.login_email || 'tanımsız'} • Sync: {subscription.integration.sync_type || 'none'}</div>
+                                          </div>
+                                          <div className="integration-actions">
+                                            <span className={`status-pill integration-${subscription.integration.status}`}>{subscription.integration.status}</span>
+                                            <div className="action-wrap">
+                                              <button type="button" className="ghost-button" onClick={() => probeConnection(subscription.integration.id)} disabled={probingConnectionId === subscription.integration.id}>
+                                                {probingConnectionId === subscription.integration.id ? 'Test ediliyor...' : 'Health Probe'}
+                                              </button>
+                                              <button type="button" className="ghost-button" onClick={() => probeConnection(subscription.integration.id, 'login')} disabled={probingConnectionId === subscription.integration.id}>
+                                                {probingConnectionId === subscription.integration.id ? 'Login deneniyor...' : 'Login Probe'}
+                                              </button>
+                                              <button type="button" className="secondary-button" onClick={() => syncConnection(subscription.integration.id)} disabled={syncingConnectionId === subscription.integration.id}>
+                                                {syncingConnectionId === subscription.integration.id ? 'Senkronize ediliyor...' : 'Tenant Sync'}
+                                              </button>
+                                            </div>
                                           </div>
                                         </div>
-                                      </div>
+                                        <IntegrationEditor
+                                          integration={subscription.integration}
+                                          onSave={saveIntegrationSettings}
+                                          isSaving={savingIntegrationId === subscription.integration.id}
+                                        />
+                                      </Fragment>
                                     )}
 
                                     <div className="billing-box">

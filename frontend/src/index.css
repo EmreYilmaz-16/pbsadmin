@@ -397,8 +397,49 @@ select:focus {
   padding: 20px;
 }
 
+.settings-grid {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
 .subscription-stack {
   margin-top: 18px;
+}
+
+.editor-card {
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  background: #fff;
+  display: grid;
+  gap: 14px;
+}
+
+.editor-card-soft {
+  margin-top: 14px;
+  background: rgba(17, 75, 95, 0.035);
+}
+
+.editor-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.editor-form {
+  margin-top: 0;
+}
+
+.editor-note {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.editor-actions {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .metric-editor {

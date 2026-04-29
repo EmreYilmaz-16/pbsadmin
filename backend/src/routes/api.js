@@ -536,6 +536,152 @@ router.get('/organizations/overview', auth, async (_req, res) => {
   res.json({ success: true, data: rows });
 });
 
+router.patch('/organizations/:id', auth, async (req, res) => {
+  const payload = req.body || {};
+  const updates = [];
+  const values = [];
+
+  const assign = (column, value) => {
+    values.push(value);
+    updates.push(`${column} = $${values.length}`);
+  };
+
+  if (payload.organization_name !== undefined) {
+    const organizationName = String(payload.organization_name || '').trim();
+    if (!organizationName) {
+      return res.status(400).json({ success: false, message: 'Organizasyon adı boş olamaz' });
+    }
+    assign('name', organizationName);
+  }
+
+  if (payload.slug !== undefined) {
+    const slug = createSlug(payload.slug);
+    if (!slug) {
+      return res.status(400).json({ success: false, message: 'Geçerli bir slug gerekli' });
+    }
+    assign('slug', slug);
+  }
+
+  if (payload.contact_email !== undefined) {
+    assign('contact_email', String(payload.contact_email || '').trim() || null);
+  }
+
+  if (payload.contact_phone !== undefined) {
+    assign('contact_phone', String(payload.contact_phone || '').trim() || null);
+  }
+
+  if (!updates.length) {
+    return res.status(400).json({ success: false, message: 'Güncellenecek alan bulunamadı' });
+  }
+
+  values.push(req.params.id);
+
+  try {
+    const { rows } = await query(
+      `UPDATE organizations
+          SET ${updates.join(', ')},
+              updated_at = NOW()
+        WHERE id = $${values.length}
+        RETURNING *`,
+      values
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({ success: false, message: 'Organizasyon bulunamadı' });
+    }
+
+    return res.json({ success: true, data: rows[0] });
+  } catch (error) {
+    if (error.code === '23505') {
+      return res.status(409).json({ success: false, message: 'Aynı slug zaten mevcut' });
+    }
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.patch('/integrations/:id', auth, async (req, res) => {
+  const payload = req.body || {};
+  const updates = [];
+  const values = [];
+
+  const assign = (column, value) => {
+    values.push(value);
+    updates.push(`${column} = $${values.length}`);
+  };
+
+  if (payload.base_url !== undefined) {
+    const baseUrl = String(payload.base_url || '').trim();
+    if (!baseUrl) {
+      return res.status(400).json({ success: false, message: 'API Base URL boş olamaz' });
+    }
+    assign('base_url', baseUrl);
+  }
+
+  if (payload.health_path !== undefined) {
+    assign('health_path', normalizePath(payload.health_path, '/health'));
+  }
+
+  if (payload.login_path !== undefined) {
+    assign('login_path', normalizePath(payload.login_path, '/api/v1/auth/login'));
+  }
+
+  if (payload.me_path !== undefined) {
+    assign('me_path', normalizePath(payload.me_path, '/api/v1/auth/me'));
+  }
+
+  if (payload.auth_type !== undefined) {
+    const authType = String(payload.auth_type || 'none').trim() || 'none';
+    if (!['none', 'bearer', 'api_key'].includes(authType)) {
+      return res.status(400).json({ success: false, message: 'Geçersiz auth tipi' });
+    }
+    assign('auth_type', authType);
+  }
+
+  if (payload.auth_value !== undefined) {
+    assign('auth_value', String(payload.auth_value || '').trim() || null);
+  }
+
+  if (payload.login_email !== undefined) {
+    assign('login_email', String(payload.login_email || '').trim() || null);
+  }
+
+  if (payload.login_password !== undefined) {
+    const loginPassword = String(payload.login_password || '');
+    if (loginPassword) {
+      assign('login_password', loginPassword);
+    }
+  }
+
+  if (payload.sync_type !== undefined) {
+    assign('sync_type', String(payload.sync_type || 'none').trim() || 'none');
+  }
+
+  if (payload.sync_settings !== undefined) {
+    assign('sync_settings', JSON.stringify(payload.sync_settings || {}));
+  }
+
+  if (!updates.length) {
+    return res.status(400).json({ success: false, message: 'Güncellenecek entegrasyon alanı bulunamadı' });
+  }
+
+  values.push(req.params.id);
+
+  const { rows } = await query(
+    `UPDATE product_api_connections
+        SET ${updates.join(', ')},
+            updated_at = NOW()
+      WHERE id = $${values.length}
+      RETURNING *`,
+    values
+  );
+
+  if (!rows.length) {
+    return res.status(404).json({ success: false, message: 'API bağlantısı bulunamadı' });
+  }
+
+  return res.json({ success: true, data: rows[0] });
+});
+
 router.post('/onboarding', auth, async (req, res) => {
   const payload = req.body || {};
   const organizationName = String(payload.organization_name || '').trim();
