@@ -1,0 +1,796 @@
+import { useEffect, useMemo, useState } from 'react';
+
+const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
+const currency = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 });
+
+const fetchJson = async (path, options = {}) => {
+  const response = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options.headers || {})
+    }
+  });
+
+  const payload = await response.json();
+  if (!response.ok || payload.success === false) {
+    throw new Error(payload.message || 'İstek başarısız');
+  }
+
+  return payload;
+};
+
+const emptyLogin = { email: 'superadmin@pbssiteadmin.local', password: 'SuperAdmin123!' };
+
+function SummaryCard({ label, value, detail, tone = 'slate' }) {
+  return (
+    <div className={`summary-card tone-${tone}`}>
+      <div className="eyebrow">{label}</div>
+      <div className="summary-value">{value}</div>
+      <div className="summary-detail">{detail}</div>
+    </div>
+  );
+}
+
+const invoiceStatusLabel = {
+  paid: 'Ödendi',
+  unpaid: 'Ödenmedi',
+  overdue: 'Gecikmiş'
+};
+
+function MetricEditor({ subscription, draft, onChange, onSave, isSaving }) {
+  const metrics = subscription.product_template.metric_definitions || [];
+
+  return (
+    <div className="metric-editor">
+      {metrics.map((metric) => {
+        const currentValue = draft?.[metric.key] ?? subscription.current_usage?.[metric.key] ?? 0;
+        const limitValue = subscription.metric_limits?.[metric.key] ?? 0;
+        const ratio = limitValue ? Math.min(Math.round((Number(currentValue) / Number(limitValue)) * 100), 100) : 0;
+
+        return (
+          <div className="metric-tile" key={`${subscription.id}-${metric.key}`}>
+            <div className="metric-head">
+              <div>
+                <div className="metric-label">{metric.label}</div>
+                <div className="metric-meta">Limit: {limitValue} {metric.unit}</div>
+              </div>
+              <div className="metric-ratio">%{ratio}</div>
+            </div>
+            <input
+              type="number"
+              min="0"
+              value={currentValue}
+              onChange={(event) => onChange(subscription.id, metric.key, Number(event.target.value))}
+            />
+          </div>
+        );
+      })}
+      <button className="secondary-button" onClick={() => onSave(subscription)} disabled={isSaving}>
+        {isSaving ? 'Kaydediliyor...' : 'Kullanımı Güncelle'}
+      </button>
+    </div>
+  );
+}
+
+function OnboardingForm({ templates, plans, onCreate, isSaving }) {
+  const [selectedTemplateId, setSelectedTemplateId] = useState('');
+  const [selectedPlanId, setSelectedPlanId] = useState('');
+  const [form, setForm] = useState({
+    organization_name: '',
+    slug: '',
+    contact_email: '',
+    contact_phone: '',
+    plan_name: '',
+    base_price: '',
+    status: 'trial',
+    billing_cycle_months: 1,
+    base_url: '',
+    health_path: '/health',
+    login_path: '/api/v1/auth/login',
+    me_path: '/api/v1/auth/me',
+    auth_type: 'none',
+    login_email: '',
+    login_password: '',
+    sync_type: 'none',
+    note: ''
+  });
+  const [limits, setLimits] = useState({});
+  const [usage, setUsage] = useState({});
+
+  const selectedTemplate = useMemo(
+    () => templates.find((template) => template.id === selectedTemplateId) || null,
+    [selectedTemplateId, templates]
+  );
+  const availablePlans = useMemo(
+    () => plans.filter((plan) => plan.product_template_id === selectedTemplateId),
+    [plans, selectedTemplateId]
+  );
+  const selectedPlan = useMemo(
+    () => availablePlans.find((plan) => plan.id === selectedPlanId) || null,
+    [availablePlans, selectedPlanId]
+  );
+
+  useEffect(() => {
+    if (!selectedTemplate) {
+      return;
+    }
+
+    const nextLimits = {};
+    const nextUsage = {};
+    selectedTemplate.metric_definitions.forEach((metric) => {
+      nextLimits[metric.key] = limits[metric.key] ?? 0;
+      nextUsage[metric.key] = usage[metric.key] ?? 0;
+    });
+    setLimits(nextLimits);
+    setUsage(nextUsage);
+    setForm((current) => ({
+      ...current,
+      plan_name: current.plan_name || `${selectedTemplate.name} Standart`,
+      base_price: current.base_price || selectedTemplate.default_base_price,
+      sync_type: selectedTemplate.code === 'property_management' ? 'mobilkiratakip_property_management' : 'none'
+    }));
+  }, [selectedTemplate]);
+
+  useEffect(() => {
+    if (!selectedPlan) {
+      return;
+    }
+
+    setLimits(selectedPlan.included_limits || {});
+    setForm((current) => ({
+      ...current,
+      plan_name: selectedPlan.name,
+      base_price: selectedPlan.monthly_price
+    }));
+  }, [selectedPlan]);
+
+  const submit = (event) => {
+    event.preventDefault();
+    onCreate({
+      ...form,
+      product_template_id: selectedTemplateId,
+      pricing_plan_id: selectedPlanId,
+      base_price: Number(form.base_price || 0),
+      billing_cycle_months: Number(form.billing_cycle_months || 1),
+      metric_limits: limits,
+      current_usage: usage
+    });
+  };
+
+  return (
+    <form className="panel panel-form" onSubmit={submit}>
+      <div className="panel-head">
+        <div>
+          <div className="eyebrow">Yeni Kiralama</div>
+          <h3>Organizasyon + ürün aboneliği aç</h3>
+        </div>
+      </div>
+
+      <div className="form-grid two">
+        <label>
+          <span>Organizasyon</span>
+          <input value={form.organization_name} onChange={(event) => setForm({ ...form, organization_name: event.target.value })} required />
+        </label>
+        <label>
+          <span>Slug</span>
+          <input value={form.slug} onChange={(event) => setForm({ ...form, slug: event.target.value })} placeholder="opsiyonel" />
+        </label>
+        <label>
+          <span>İletişim E-postası</span>
+          <input type="email" value={form.contact_email} onChange={(event) => setForm({ ...form, contact_email: event.target.value })} />
+        </label>
+        <label>
+          <span>Telefon</span>
+          <input value={form.contact_phone} onChange={(event) => setForm({ ...form, contact_phone: event.target.value })} />
+        </label>
+      </div>
+
+      <div className="form-grid three">
+        <label>
+          <span>Ürün</span>
+          <select value={selectedTemplateId} onChange={(event) => { setSelectedTemplateId(event.target.value); setSelectedPlanId(''); }} required>
+            <option value="">Ürün seçin</option>
+            {templates.map((template) => (
+              <option key={template.id} value={template.id}>{template.name}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span>Plan Kataloğu</span>
+          <select value={selectedPlanId} onChange={(event) => setSelectedPlanId(event.target.value)} disabled={!selectedTemplateId}>
+            <option value="">Elle tanımla / plan seç</option>
+            {availablePlans.map((plan) => (
+              <option key={plan.id} value={plan.id}>{plan.name} • {currency.format(plan.monthly_price)}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span>Plan Adı</span>
+          <input value={form.plan_name} onChange={(event) => setForm({ ...form, plan_name: event.target.value })} required />
+        </label>
+      </div>
+
+      <div className="form-grid three">
+        <label>
+          <span>Aylık Bedel</span>
+          <input type="number" min="0" value={form.base_price} onChange={(event) => setForm({ ...form, base_price: event.target.value })} />
+        </label>
+        <label>
+          <span>Fatura Döngüsü (ay)</span>
+          <input type="number" min="1" value={form.billing_cycle_months} onChange={(event) => setForm({ ...form, billing_cycle_months: event.target.value })} />
+        </label>
+        <label>
+          <span>Durum</span>
+          <select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })}>
+            <option value="trial">Trial</option>
+            <option value="active">Active</option>
+            <option value="suspended">Suspended</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </label>
+        <label>
+          <span>API Base URL</span>
+          <input value={form.base_url} onChange={(event) => setForm({ ...form, base_url: event.target.value })} placeholder="https://product.example.com/api" />
+        </label>
+      </div>
+
+      <div className="form-grid three">
+        <label>
+          <span>Login Path</span>
+          <input value={form.login_path} onChange={(event) => setForm({ ...form, login_path: event.target.value })} />
+        </label>
+        <label>
+          <span>Me Path</span>
+          <input value={form.me_path} onChange={(event) => setForm({ ...form, me_path: event.target.value })} />
+        </label>
+        <label>
+          <span>Senkronizasyon Tipi</span>
+          <select value={form.sync_type} onChange={(event) => setForm({ ...form, sync_type: event.target.value })}>
+            <option value="none">Senkronizasyon yok</option>
+            <option value="mobilkiratakip_property_management">MobilKiraTakip kullanım senkronizasyonu</option>
+          </select>
+        </label>
+      </div>
+
+      <div className="form-grid two">
+        <label>
+          <span>Entegrasyon Login E-postası</span>
+          <input type="email" value={form.login_email} onChange={(event) => setForm({ ...form, login_email: event.target.value })} placeholder="tenant-admin@example.com" />
+        </label>
+        <label>
+          <span>Entegrasyon Login Şifresi</span>
+          <input type="password" value={form.login_password} onChange={(event) => setForm({ ...form, login_password: event.target.value })} placeholder="Harici ürün şifresi" />
+        </label>
+      </div>
+
+      {selectedTemplate && (
+        <div className="metric-config">
+          <div className="section-title">Kota ve kullanım tanımı</div>
+          <div className="form-grid two">
+            {selectedTemplate.metric_definitions.map((metric) => (
+              <div className="metric-config-row" key={metric.key}>
+                <label>
+                  <span>{metric.label} limiti</span>
+                  <input type="number" min="0" value={limits[metric.key] ?? 0} onChange={(event) => setLimits({ ...limits, [metric.key]: Number(event.target.value) })} />
+                </label>
+                <label>
+                  <span>{metric.label} mevcut kullanım</span>
+                  <input type="number" min="0" value={usage[metric.key] ?? 0} onChange={(event) => setUsage({ ...usage, [metric.key]: Number(event.target.value) })} />
+                </label>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="form-grid three">
+        <label>
+          <span>Health Path</span>
+          <input value={form.health_path} onChange={(event) => setForm({ ...form, health_path: event.target.value })} />
+        </label>
+        <label>
+          <span>Auth Type</span>
+          <select value={form.auth_type} onChange={(event) => setForm({ ...form, auth_type: event.target.value })}>
+            <option value="none">None</option>
+            <option value="bearer">Bearer</option>
+            <option value="api_key">API Key</option>
+          </select>
+        </label>
+        <label>
+          <span>Not</span>
+          <input value={form.note} onChange={(event) => setForm({ ...form, note: event.target.value })} />
+        </label>
+      </div>
+
+      <button className="primary-button" disabled={isSaving}>
+        {isSaving ? 'Açılıyor...' : 'Organizasyonu Aç'}
+      </button>
+    </form>
+  );
+}
+
+export default function App() {
+  const [credentials, setCredentials] = useState(emptyLogin);
+  const [token, setToken] = useState(() => localStorage.getItem('pbssiteadmin_token') || '');
+  const [user, setUser] = useState(null);
+  const [summary, setSummary] = useState(null);
+  const [organizations, setOrganizations] = useState([]);
+  const [templates, setTemplates] = useState([]);
+  const [plans, setPlans] = useState([]);
+  const [loading, setLoading] = useState(Boolean(token));
+  const [error, setError] = useState('');
+  const [usageDrafts, setUsageDrafts] = useState({});
+  const [savingSubscriptionId, setSavingSubscriptionId] = useState('');
+  const [probingConnectionId, setProbingConnectionId] = useState('');
+  const [syncingConnectionId, setSyncingConnectionId] = useState('');
+  const [onboardingPending, setOnboardingPending] = useState(false);
+  const [invoiceActionId, setInvoiceActionId] = useState('');
+  const [exportingScope, setExportingScope] = useState('');
+
+  const authorizedRequest = async (path, options = {}) => fetchJson(path, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      ...(options.headers || {})
+    }
+  });
+
+  const bootstrap = async () => {
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    try {
+      const [me, dashboard, overview, productTemplates, catalogPlans] = await Promise.all([
+        authorizedRequest('/auth/me'),
+        authorizedRequest('/dashboard/summary'),
+        authorizedRequest('/organizations/overview'),
+        authorizedRequest('/product-templates'),
+        authorizedRequest('/catalog/plans')
+      ]);
+      setUser(me.data);
+      setSummary(dashboard.data);
+      setOrganizations(overview.data);
+      setTemplates(productTemplates.data);
+      setPlans(catalogPlans.data);
+      const draftMap = {};
+      overview.data.forEach((organization) => {
+        organization.subscriptions.forEach((subscription) => {
+          draftMap[subscription.id] = subscription.current_usage || {};
+        });
+      });
+      setUsageDrafts(draftMap);
+    } catch (requestError) {
+      localStorage.removeItem('pbssiteadmin_token');
+      setToken('');
+      setError(requestError.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    bootstrap();
+  }, [token]);
+
+  const handleLogin = async (event) => {
+    event.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const response = await fetchJson('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify(credentials)
+      });
+      localStorage.setItem('pbssiteadmin_token', response.data.token);
+      setToken(response.data.token);
+    } catch (requestError) {
+      setError(requestError.message);
+      setLoading(false);
+    }
+  };
+
+  const handleUsageChange = (subscriptionId, metricKey, nextValue) => {
+    setUsageDrafts((current) => ({
+      ...current,
+      [subscriptionId]: {
+        ...(current[subscriptionId] || {}),
+        [metricKey]: nextValue
+      }
+    }));
+  };
+
+  const saveUsage = async (subscription) => {
+    setSavingSubscriptionId(subscription.id);
+    setError('');
+    try {
+      await authorizedRequest(`/subscriptions/${subscription.id}/usage`, {
+        method: 'PATCH',
+        body: JSON.stringify({ current_usage: usageDrafts[subscription.id] || {} })
+      });
+      await bootstrap();
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setSavingSubscriptionId('');
+    }
+  };
+
+  const probeConnection = async (connectionId, mode = 'health') => {
+    setProbingConnectionId(connectionId);
+    setError('');
+    try {
+      await authorizedRequest(`/integrations/${connectionId}/${mode === 'login' ? 'probe-login' : 'probe'}`, { method: 'POST' });
+      await bootstrap();
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setProbingConnectionId('');
+    }
+  };
+
+  const syncConnection = async (connectionId) => {
+    setSyncingConnectionId(connectionId);
+    setError('');
+    try {
+      await authorizedRequest(`/integrations/${connectionId}/sync`, { method: 'POST' });
+      await bootstrap();
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setSyncingConnectionId('');
+    }
+  };
+
+  const onboardOrganization = async (payload) => {
+    setOnboardingPending(true);
+    setError('');
+    try {
+      await authorizedRequest('/onboarding', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      await bootstrap();
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setOnboardingPending(false);
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem('pbssiteadmin_token');
+    setToken('');
+    setUser(null);
+    setSummary(null);
+    setOrganizations([]);
+    setTemplates([]);
+    setPlans([]);
+  };
+
+  const createInvoice = async (subscriptionId) => {
+    setInvoiceActionId(subscriptionId);
+    setError('');
+    try {
+      await authorizedRequest(`/subscriptions/${subscriptionId}/invoices`, {
+        method: 'POST',
+        body: JSON.stringify({})
+      });
+      await bootstrap();
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setInvoiceActionId('');
+    }
+  };
+
+  const setInvoiceStatus = async (invoiceId, status) => {
+    setInvoiceActionId(invoiceId);
+    setError('');
+    try {
+      await authorizedRequest(`/invoices/${invoiceId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status })
+      });
+      await bootstrap();
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setInvoiceActionId('');
+    }
+  };
+
+  const updateInvoiceNote = async (invoice) => {
+    const nextNote = window.prompt('Fatura notu', invoice.note || '');
+    if (nextNote === null) {
+      return;
+    }
+
+    setInvoiceActionId(invoice.id);
+    setError('');
+    try {
+      await authorizedRequest(`/invoices/${invoice.id}/note`, {
+        method: 'PATCH',
+        body: JSON.stringify({ note: nextNote })
+      });
+      await bootstrap();
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setInvoiceActionId('');
+    }
+  };
+
+  const recordInvoicePayment = async (invoice) => {
+    const suggestedAmount = String(invoice.outstanding_amount || invoice.amount || 0);
+    const amount = window.prompt('Tahsil edilen tutar', suggestedAmount);
+    if (amount === null) {
+      return;
+    }
+
+    const paymentMethod = window.prompt('Ödeme yöntemi', 'bank_transfer');
+    if (paymentMethod === null) {
+      return;
+    }
+
+    const collectedAt = window.prompt('Tahsilat tarihi (ISO veya boş bırakın)', new Date().toISOString().slice(0, 16));
+    if (collectedAt === null) {
+      return;
+    }
+
+    const note = window.prompt('Ödeme notu', '');
+    if (note === null) {
+      return;
+    }
+
+    setInvoiceActionId(invoice.id);
+    setError('');
+    try {
+      await authorizedRequest(`/invoices/${invoice.id}/payments`, {
+        method: 'POST',
+        body: JSON.stringify({
+          amount: Number(amount),
+          payment_method: paymentMethod,
+          collected_at: collectedAt || undefined,
+          note
+        })
+      });
+      await bootstrap();
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setInvoiceActionId('');
+    }
+  };
+
+  const exportBilling = async (organizationId = '') => {
+    setExportingScope(organizationId || 'all');
+    setError('');
+    try {
+      const query = organizationId ? `?organization_id=${encodeURIComponent(organizationId)}` : '';
+      const response = await fetch(`${API_BASE}/billing/export${query}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!response.ok) {
+        const payload = await response.text();
+        throw new Error(payload || 'CSV dışa aktarım başarısız');
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = organizationId ? `billing-${organizationId}.csv` : 'pbssiteadmin-billing.csv';
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setExportingScope('');
+    }
+  };
+
+  if (!token) {
+    return (
+      <div className="login-shell">
+        <div className="login-panel">
+          <div className="eyebrow">PBS Site Admin</div>
+          <h1>Çoklu ürün kiralama yönetimi</h1>
+          <p>Mülk yönetimi, filo takip ve klinik uygulaması gibi ürünleri tek super admin panelinden yönetin.</p>
+          <form onSubmit={handleLogin} className="login-form">
+            <label>
+              <span>E-posta</span>
+              <input type="email" value={credentials.email} onChange={(event) => setCredentials({ ...credentials, email: event.target.value })} />
+            </label>
+            <label>
+              <span>Şifre</span>
+              <input type="password" value={credentials.password} onChange={(event) => setCredentials({ ...credentials, password: event.target.value })} />
+            </label>
+            <button className="primary-button" disabled={loading}>{loading ? 'Giriş yapılıyor...' : 'Panele Gir'}</button>
+          </form>
+          {error && <div className="error-box">{error}</div>}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="app-shell">
+      <header className="hero">
+        <div>
+          <div className="eyebrow">Merkezi Kiralama Yönetimi</div>
+          <h1>PBS ürün ailesi için ürün bazlı kapasite ve abonelik kontrolü</h1>
+          <p>Her ürün kendi metriğini getirir; panel sadece ürün tipine göre doğru kotayı, fiyatı ve API bağlantısını yönetir.</p>
+        </div>
+        <div className="hero-actions">
+          <div className="user-badge">
+            <strong>{user?.name}</strong>
+            <span>{user?.email}</span>
+          </div>
+          <button className="ghost-button" onClick={logout}>Çıkış</button>
+        </div>
+      </header>
+
+      {error && <div className="error-box floating">{error}</div>}
+
+      {loading ? (
+        <div className="panel">Yükleniyor...</div>
+      ) : (
+        <>
+          <section className="summary-grid">
+            <SummaryCard label="Toplam Organizasyon" value={summary?.organization_count ?? 0} detail={`${summary?.active_organization_count ?? 0} aktif organizasyon`} tone="sky" />
+            <SummaryCard label="Aylık Gelir" value={currency.format(summary?.monthly_revenue ?? 0)} detail="Aktif + trial ürün abonelikleri" tone="emerald" />
+            <SummaryCard label="Açık Tahsilat" value={currency.format(summary?.invoice_summary?.receivable_total ?? 0)} detail={`${summary?.invoice_summary?.overdue_count ?? 0} gecikmiş fatura`} tone="amber" />
+            <SummaryCard label="Toplanan Ödeme" value={currency.format(summary?.invoice_summary?.collected_total ?? 0)} detail={`${summary?.invoice_summary?.paid_count ?? 0} tam ödenmiş fatura`} tone="rose" />
+          </section>
+
+          <section className="dashboard-grid">
+            <OnboardingForm templates={templates} plans={plans} onCreate={onboardOrganization} isSaving={onboardingPending} />
+            <div className="panel">
+              <div className="panel-head">
+                <div>
+                  <div className="eyebrow">Ürün Dağılımı</div>
+                  <h3>Şablon bazlı aktif gelir görünümü</h3>
+                </div>
+              </div>
+              <div className="breakdown-list">
+                {(summary?.product_breakdown || []).map((item) => (
+                  <div className="breakdown-row" key={item.code}>
+                    <div>
+                      <strong>{item.name}</strong>
+                      <span>{item.subscription_count} aktif/trial abonelik</span>
+                    </div>
+                    <div>{currency.format(item.monthly_revenue)}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="invoice-summary-strip">
+                <div><strong>{summary?.invoice_summary?.paid_count ?? 0}</strong><span>Ödenen</span></div>
+                <div><strong>{summary?.invoice_summary?.unpaid_count ?? 0}</strong><span>Ödenmeyen</span></div>
+                <div><strong>{summary?.invoice_summary?.overdue_count ?? 0}</strong><span>Gecikmiş</span></div>
+              </div>
+              <button className="secondary-button" onClick={() => exportBilling()} disabled={exportingScope === 'all'}>
+                {exportingScope === 'all' ? 'CSV hazırlanıyor...' : 'Tüm Faturaları CSV Dışa Aktar'}
+              </button>
+            </div>
+          </section>
+
+          <section className="org-list">
+            {organizations.map((organization) => (
+              <article key={organization.id} className="org-card">
+                <div className="org-head">
+                  <div>
+                    <div className="eyebrow">{organization.slug}</div>
+                    <h2>{organization.name}</h2>
+                    <p>{organization.contact_email || 'E-posta yok'} • {organization.contact_phone || 'Telefon yok'}</p>
+                  </div>
+                  <span className={`status-pill ${organization.is_active ? 'active' : 'inactive'}`}>
+                    {organization.is_active ? 'Aktif' : 'Pasif'}
+                  </span>
+                </div>
+
+                <div className="subscription-stack">
+                  {organization.subscriptions.map((subscription) => (
+                    <div className="subscription-card" key={subscription.id}>
+                      <div className="subscription-head">
+                        <div>
+                          <div className="subscription-product">{subscription.product_template.name}</div>
+                          <h3>{subscription.plan_name}</h3>
+                          <p>{currency.format(subscription.base_price)} / {subscription.billing_cycle_months} ay • Yenileme: {subscription.renewal_at ? new Date(subscription.renewal_at).toLocaleDateString('tr-TR') : '-'}</p>
+                          {subscription.pricing_plan && <p>{subscription.pricing_plan.name} • Plan kataloğundan bağlı</p>}
+                        </div>
+                        <span className={`status-pill status-${subscription.status}`}>{subscription.status}</span>
+                      </div>
+
+                      <MetricEditor
+                        subscription={subscription}
+                        draft={usageDrafts[subscription.id]}
+                        onChange={handleUsageChange}
+                        onSave={saveUsage}
+                        isSaving={savingSubscriptionId === subscription.id}
+                      />
+
+                      {subscription.integration && (
+                        <div className="integration-box">
+                          <div>
+                            <div className="eyebrow">API Entegrasyonu</div>
+                            <strong>{subscription.integration.base_url}</strong>
+                            <div className="integration-meta">{subscription.integration.health_path} • {subscription.integration.last_health_message || 'Health-check yok'}</div>
+                            <div className="integration-meta">Login: {subscription.integration.login_email || 'tanımsız'} • Sync: {subscription.integration.sync_type || 'none'}</div>
+                          </div>
+                          <div className="integration-actions">
+                            <span className={`status-pill integration-${subscription.integration.status}`}>{subscription.integration.status}</span>
+                            <div className="action-wrap">
+                              <button className="ghost-button" onClick={() => probeConnection(subscription.integration.id)} disabled={probingConnectionId === subscription.integration.id}>
+                                {probingConnectionId === subscription.integration.id ? 'Test ediliyor...' : 'Health Probe'}
+                              </button>
+                              <button className="ghost-button" onClick={() => probeConnection(subscription.integration.id, 'login')} disabled={probingConnectionId === subscription.integration.id}>
+                                {probingConnectionId === subscription.integration.id ? 'Login deneniyor...' : 'Login Probe'}
+                              </button>
+                              <button className="secondary-button" onClick={() => syncConnection(subscription.integration.id)} disabled={syncingConnectionId === subscription.integration.id}>
+                                {syncingConnectionId === subscription.integration.id ? 'Senkronize ediliyor...' : 'Tenant Sync'}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="billing-box">
+                        <div className="billing-head">
+                          <div>
+                            <div className="eyebrow">Faturalama</div>
+                            <strong>{subscription.invoice_summary.total} fatura • {currency.format(subscription.invoice_summary.amount_total)}</strong>
+                            <div className="integration-meta">Açık: {subscription.invoice_summary.unpaid_count + subscription.invoice_summary.overdue_count} • Gecikmiş: {subscription.invoice_summary.overdue_count} • Tahsil edilen: {currency.format(subscription.invoice_summary.paid_total || 0)}</div>
+                          </div>
+                          <div className="action-wrap">
+                            <button className="ghost-button" onClick={() => exportBilling(organization.id)} disabled={exportingScope === organization.id}>
+                              {exportingScope === organization.id ? 'CSV...' : 'CSV Aktar'}
+                            </button>
+                            <button className="ghost-button" onClick={() => createInvoice(subscription.id)} disabled={invoiceActionId === subscription.id}>
+                              {invoiceActionId === subscription.id ? 'Üretiliyor...' : 'Fatura Üret'}
+                            </button>
+                          </div>
+                        </div>
+                        <div className="invoice-list">
+                          {subscription.invoices.map((invoice) => (
+                            <div className="invoice-row" key={invoice.id}>
+                              <div>
+                                <strong>{invoice.invoice_number}</strong>
+                                <span>{currency.format(invoice.amount)} • Vade: {new Date(invoice.due_date).toLocaleDateString('tr-TR')}</span>
+                                <span>Tahsil edilen: {currency.format(invoice.paid_total || 0)} • Kalan: {currency.format(invoice.outstanding_amount || 0)}</span>
+                                <span>Son tahsilat: {invoice.payments?.[0]?.collected_at ? new Date(invoice.payments[0].collected_at).toLocaleString('tr-TR') : '-'}</span>
+                                {invoice.note && <span>Not: {invoice.note}</span>}
+                              </div>
+                              <div className="invoice-actions">
+                                <span className={`status-pill invoice-${invoice.status}`}>{invoiceStatusLabel[invoice.status] || invoice.status}</span>
+                                <button className="ghost-button" onClick={() => updateInvoiceNote(invoice)} disabled={invoiceActionId === invoice.id}>Not</button>
+                                {invoice.outstanding_amount > 0 && (
+                                  <button className="ghost-button" onClick={() => recordInvoicePayment(invoice)} disabled={invoiceActionId === invoice.id}>Ödeme Kaydı</button>
+                                )}
+                                {invoice.status !== 'paid' && (
+                                  <button className="ghost-button" onClick={() => setInvoiceStatus(invoice.id, 'paid')} disabled={invoiceActionId === invoice.id}>Ödendi</button>
+                                )}
+                                {invoice.status === 'paid' && (
+                                  <button className="ghost-button" onClick={() => setInvoiceStatus(invoice.id, 'unpaid')} disabled={invoiceActionId === invoice.id}>Açık Yap</button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </section>
+        </>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,484 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Manrope:wght@400;500;700;800&display=swap');
+
+:root {
+  color-scheme: light;
+  --bg: #f4efe6;
+  --panel: rgba(255, 251, 246, 0.86);
+  --panel-strong: #fffdf8;
+  --ink: #1d1d1b;
+  --muted: #6c625a;
+  --line: rgba(29, 29, 27, 0.08);
+  --brand: #114b5f;
+  --brand-soft: #d8edf3;
+  --accent: #ef8354;
+  --good: #2d6a4f;
+  --warn: #bc6c25;
+  --bad: #a63446;
+  --shadow: 0 24px 60px rgba(17, 75, 95, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Manrope', sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(17, 75, 95, 0.16), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(239, 131, 84, 0.18), transparent 24%),
+    var(--bg);
+  color: var(--ink);
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.login-shell,
+.app-shell {
+  min-height: 100vh;
+  padding: 32px;
+}
+
+.login-shell {
+  display: grid;
+  place-items: center;
+}
+
+.login-panel,
+.panel,
+.org-card,
+.subscription-card,
+.summary-card {
+  backdrop-filter: blur(16px);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.login-panel {
+  width: min(520px, 100%);
+  padding: 32px;
+  border-radius: 28px;
+}
+
+.login-panel h1,
+.hero h1,
+.org-head h2,
+.subscription-head h3,
+.panel h3 {
+  margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.login-panel p,
+.hero p,
+.org-head p,
+.subscription-head p,
+.summary-detail,
+.breakdown-row span,
+.integration-meta,
+.metric-meta,
+.eyebrow {
+  color: var(--muted);
+}
+
+.login-form,
+.form-grid,
+.metric-editor,
+.subscription-stack,
+.breakdown-list,
+.org-list {
+  display: grid;
+  gap: 16px;
+}
+
+.login-form {
+  margin-top: 24px;
+}
+
+label {
+  display: grid;
+  gap: 8px;
+}
+
+label span,
+.eyebrow,
+.section-title,
+.subscription-product {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-weight: 700;
+}
+
+input,
+select {
+  width: 100%;
+  border-radius: 16px;
+  border: 1px solid rgba(17, 75, 95, 0.16);
+  background: #fffdf9;
+  padding: 14px 16px;
+  outline: none;
+}
+
+input:focus,
+select:focus {
+  border-color: var(--brand);
+}
+
+.primary-button,
+.secondary-button,
+.ghost-button {
+  border: none;
+  border-radius: 999px;
+  padding: 14px 18px;
+  font-weight: 800;
+}
+
+.primary-button {
+  background: linear-gradient(135deg, var(--brand), #197278);
+  color: white;
+}
+
+.secondary-button {
+  background: #ecf6f7;
+  color: var(--brand);
+}
+
+.ghost-button {
+  background: rgba(17, 75, 95, 0.08);
+  color: var(--brand);
+}
+
+.hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: flex-start;
+  padding: 28px;
+  border-radius: 32px;
+  background: linear-gradient(135deg, rgba(17, 75, 95, 0.96), rgba(49, 114, 92, 0.86));
+  color: white;
+  box-shadow: var(--shadow);
+}
+
+.hero p,
+.hero .eyebrow,
+.user-badge span {
+  color: rgba(255, 255, 255, 0.76);
+}
+
+.hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.user-badge {
+  display: grid;
+  gap: 2px;
+  padding: 14px 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.summary-grid,
+.dashboard-grid,
+.form-grid.two,
+.form-grid.three,
+.metric-config-row,
+.org-head,
+.subscription-head,
+.integration-box,
+.metric-head {
+  display: grid;
+  gap: 16px;
+}
+
+.summary-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 24px;
+}
+
+.summary-card {
+  padding: 22px;
+  border-radius: 26px;
+}
+
+.summary-value {
+  margin-top: 16px;
+  font: 800 34px 'Space Grotesk', sans-serif;
+}
+
+.tone-sky { background: linear-gradient(180deg, rgba(216, 237, 243, 0.85), rgba(255, 251, 246, 0.92)); }
+.tone-emerald { background: linear-gradient(180deg, rgba(203, 237, 220, 0.85), rgba(255, 251, 246, 0.92)); }
+.tone-amber { background: linear-gradient(180deg, rgba(255, 234, 204, 0.88), rgba(255, 251, 246, 0.92)); }
+.tone-rose { background: linear-gradient(180deg, rgba(255, 220, 223, 0.88), rgba(255, 251, 246, 0.92)); }
+
+.dashboard-grid {
+  grid-template-columns: 1.1fr 0.9fr;
+  margin-top: 24px;
+}
+
+.panel,
+.org-card,
+.subscription-card {
+  border-radius: 28px;
+  padding: 24px;
+}
+
+.panel-form {
+  align-self: start;
+}
+
+.panel-head,
+.org-head,
+.subscription-head,
+.integration-box {
+  grid-template-columns: 1fr auto;
+  align-items: start;
+}
+
+.form-grid.two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.form-grid.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.metric-config {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 22px;
+  background: rgba(17, 75, 95, 0.04);
+}
+
+.breakdown-row,
+.org-head,
+.subscription-head,
+.integration-box {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.breakdown-row {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.breakdown-row:last-child {
+  border-bottom: none;
+}
+
+.invoice-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.invoice-summary-strip > div,
+.billing-box,
+.invoice-row {
+  border: 1px solid var(--line);
+  background: rgba(17, 75, 95, 0.04);
+  border-radius: 20px;
+}
+
+.invoice-summary-strip > div {
+  padding: 14px 16px;
+  display: grid;
+  gap: 4px;
+}
+
+.invoice-summary-strip strong {
+  font: 800 24px 'Space Grotesk', sans-serif;
+}
+
+.invoice-summary-strip span {
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.org-list {
+  margin-top: 24px;
+}
+
+.subscription-stack {
+  margin-top: 18px;
+}
+
+.metric-editor {
+  margin-top: 18px;
+}
+
+.metric-editor {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  align-items: end;
+}
+
+.billing-box {
+  margin-top: 16px;
+  padding: 16px;
+  display: grid;
+  gap: 14px;
+}
+
+.billing-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.invoice-list {
+  display: grid;
+  gap: 10px;
+}
+
+.invoice-row {
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
+
+.invoice-row span {
+  display: block;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.invoice-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.action-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.metric-tile {
+  padding: 16px;
+  border-radius: 20px;
+  background: rgba(17, 75, 95, 0.05);
+}
+
+.metric-head {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.metric-ratio {
+  font-weight: 800;
+  color: var(--brand);
+}
+
+.status-pill {
+  align-self: start;
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.status-pill.active,
+.status-pill.status-active,
+.status-pill.integration-healthy {
+  background: rgba(45, 106, 79, 0.14);
+  color: var(--good);
+}
+
+.status-pill.inactive,
+.status-pill.status-cancelled,
+.status-pill.integration-offline {
+  background: rgba(166, 52, 70, 0.12);
+  color: var(--bad);
+}
+
+.status-pill.status-trial,
+.status-pill.integration-pending {
+  background: rgba(188, 108, 37, 0.14);
+  color: var(--warn);
+}
+
+.status-pill.status-suspended,
+.status-pill.integration-degraded {
+  background: rgba(17, 75, 95, 0.12);
+  color: var(--brand);
+}
+
+.status-pill.invoice-paid {
+  background: rgba(45, 106, 79, 0.14);
+  color: var(--good);
+}
+
+.status-pill.invoice-unpaid {
+  background: rgba(188, 108, 37, 0.14);
+  color: var(--warn);
+}
+
+.status-pill.invoice-overdue {
+  background: rgba(166, 52, 70, 0.12);
+  color: var(--bad);
+}
+
+.error-box {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(166, 52, 70, 0.12);
+  color: var(--bad);
+  font-weight: 700;
+}
+
+.error-box.floating {
+  margin-top: 20px;
+}
+
+@media (max-width: 1100px) {
+  .summary-grid,
+  .dashboard-grid,
+  .form-grid.two,
+  .form-grid.three {
+    grid-template-columns: 1fr;
+  }
+
+  .hero,
+  .org-head,
+  .subscription-head,
+  .integration-box,
+  .billing-head,
+  .invoice-row {
+    flex-direction: column;
+  }
+
+  .invoice-summary-strip {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,72 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: pbssiteadmin_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-pbssiteadmin}
+      POSTGRES_USER: ${POSTGRES_USER:-pbssiteadmin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pbssiteadmin123}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pbssiteadmin}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pbssiteadmin_net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pbssiteadmin_api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-pbssiteadmin}:${POSTGRES_PASSWORD:-pbssiteadmin123}@db:5432/${POSTGRES_DB:-pbssiteadmin}
+      JWT_SECRET: ${JWT_SECRET:-change_this_super_admin_secret}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8310:3000"
+    networks:
+      - pbssiteadmin_net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-/api/v1}
+    container_name: pbssiteadmin_web
+    restart: unless-stopped
+    networks:
+      - pbssiteadmin_net
+
+  nginx:
+    image: nginx:alpine
+    container_name: pbssiteadmin_nginx
+    restart: unless-stopped
+    ports:
+      - "9180:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - pbssiteadmin_net
+
+volumes:
+  postgres_data:
+
+networks:
+  pbssiteadmin_net:
+    driver: bridge
