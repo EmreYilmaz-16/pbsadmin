@@ -107,6 +107,146 @@ const buildRemoteHeaders = (connection, token) => {
   return headers;
 };
 
+const mobilKiraTakipProvisioningConfig = {
+  baseUrl: String(process.env.MOBILKIRATAKIP_PLATFORM_URL || 'http://host.docker.internal:9080').trim(),
+  loginPath: normalizePath(process.env.MOBILKIRATAKIP_PLATFORM_LOGIN_PATH, '/api/v1/auth/login'),
+  email: String(process.env.MOBILKIRATAKIP_PLATFORM_EMAIL || 'superadmin@kiratakip.local').trim(),
+  password: String(process.env.MOBILKIRATAKIP_PLATFORM_PASSWORD || 'SuperAdmin123!').trim()
+};
+
+const createProvisioningError = (message, status = 400) => {
+  const error = new Error(message);
+  error.status = status;
+  return error;
+};
+
+const deriveMobilKiraTakipPlan = (metricLimits = {}) => {
+  const users = Number(metricLimits.users || 0);
+  const properties = Number(metricLimits.properties || 0);
+
+  if (users <= 3 && properties <= 50) {
+    return 'starter';
+  }
+
+  if (users <= 10 && properties <= 250) {
+    return 'pro';
+  }
+
+  return 'enterprise';
+};
+
+const buildTrialEndsAt = (status) => {
+  if (status !== 'trial') {
+    return null;
+  }
+
+  const next = new Date();
+  next.setDate(next.getDate() + 14);
+  return next.toISOString();
+};
+
+const loginToMobilKiraTakipPlatform = async () => {
+  const { baseUrl, loginPath, email, password } = mobilKiraTakipProvisioningConfig;
+
+  if (!baseUrl || !email || !password) {
+    throw createProvisioningError('MobilKiraTakip provisioning yapılandırması eksik', 500);
+  }
+
+  const response = await fetch(buildRemoteUrl(baseUrl, loginPath, '/api/v1/auth/login'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json'
+    },
+    body: JSON.stringify({ email, password })
+  });
+
+  const payload = await safeParseJson(response);
+  if (!response.ok || payload?.success === false || !payload?.data?.token) {
+    throw createProvisioningError(payload?.message || `MobilKiraTakip platform girişi başarısız (${response.status})`, 502);
+  }
+
+  return {
+    baseUrl,
+    token: payload.data.token,
+    user: payload.data.user || null
+  };
+};
+
+const provisionMobilKiraTakipOrganization = async ({
+  organizationName,
+  slug,
+  contactEmail,
+  contactPhone,
+  metricLimits,
+  status,
+  loginEmail,
+  loginPassword
+}) => {
+  if (!loginEmail || !loginPassword) {
+    throw createProvisioningError('MobilKiraTakip tenant açılışı için login e-postası ve şifresi zorunlu');
+  }
+
+  const session = await loginToMobilKiraTakipPlatform();
+  const payload = {
+    name: organizationName,
+    slug,
+    contact_email: contactEmail || null,
+    contact_phone: contactPhone || null,
+    subscription_plan: deriveMobilKiraTakipPlan(metricLimits),
+    max_users: Number(metricLimits.users || 3),
+    max_properties: Number(metricLimits.properties || 25),
+    trial_ends_at: buildTrialEndsAt(status),
+    is_active: true,
+    admin_name: `${organizationName} Admin`,
+    admin_email: loginEmail,
+    admin_password: loginPassword,
+    admin_phone: contactPhone || null
+  };
+
+  const response = await fetch(buildRemoteUrl(session.baseUrl, '/api/v1/organizations', '/api/v1/organizations'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      Authorization: `Bearer ${session.token}`
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const provisioned = await safeParseJson(response);
+  if (!response.ok || provisioned?.success === false || !provisioned?.data?.id) {
+    throw createProvisioningError(provisioned?.message || `MobilKiraTakip tenant açılışı başarısız (${response.status})`, 502);
+  }
+
+  return {
+    id: provisioned.data.id,
+    slug: provisioned.data.slug,
+    baseUrl: session.baseUrl,
+    token: session.token,
+    payload
+  };
+};
+
+const deleteMobilKiraTakipOrganization = async (organizationId, token, baseUrlOverride) => {
+  if (!organizationId || !token) {
+    return;
+  }
+
+  try {
+    const baseUrl = baseUrlOverride || mobilKiraTakipProvisioningConfig.baseUrl;
+    await fetch(buildRemoteUrl(baseUrl, `/api/v1/organizations/${organizationId}`, `/api/v1/organizations/${organizationId}`), {
+      method: 'DELETE',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`
+      }
+    });
+  } catch (_error) {
+    // Best-effort compensation. The local onboarding error is more important than cleanup noise.
+  }
+};
+
 const loadIntegrationConnection = async (connectionId) => {
   const { rows } = await query(
     `SELECT c.*, o.name AS organization_name, o.slug AS organization_slug,
@@ -151,7 +291,7 @@ const loginToRemoteConnection = async (connection) => {
 
   const meUrl = buildRemoteUrl(
     connection.base_url,
-    connection.me_path || normalizePath(String(connection.login_path || '').replace(/\/login$/, '/me'), '/api/v1/auth/me'),
+    connection.me_path,
     '/api/v1/auth/me'
   );
   const meResponse = await fetch(meUrl, {
@@ -726,9 +866,28 @@ router.post('/onboarding', auth, async (req, res) => {
     ? payload.metric_limits
     : (template.included_limits || {});
   const currentUsage = payload.current_usage && typeof payload.current_usage === 'object' ? payload.current_usage : {};
+  const requiresMobilKiraTakipProvisioning = template.code === 'property_management' && (payload.sync_type || 'none') === 'mobilkiratakip_property_management';
+  let provisionedTenant = null;
   const client = await getClient();
 
   try {
+    if (requiresMobilKiraTakipProvisioning) {
+      if (!baseUrl) {
+        return res.status(400).json({ success: false, message: 'MobilKiraTakip tenantı için API Base URL gerekli' });
+      }
+
+      provisionedTenant = await provisionMobilKiraTakipOrganization({
+        organizationName,
+        slug: createSlug(payload.slug || organizationName),
+        contactEmail: payload.contact_email || null,
+        contactPhone: payload.contact_phone || null,
+        metricLimits,
+        status: payload.status || 'trial',
+        loginEmail,
+        loginPassword
+      });
+    }
+
     await client.query('BEGIN');
     const slug = createSlug(payload.slug || organizationName);
     const organizationInsert = await client.query(
@@ -844,7 +1003,14 @@ router.post('/onboarding', auth, async (req, res) => {
           loginPassword || null,
           payload.sync_type || 'none',
           JSON.stringify(payload.sync_settings || {}),
-          JSON.stringify({ source: 'onboarding' })
+          JSON.stringify({
+            source: 'onboarding',
+            remote_tenant: provisionedTenant ? {
+              id: provisionedTenant.id,
+              slug: provisionedTenant.slug,
+              provider: 'mobilkiratakip'
+            } : null
+          })
         ]
       );
       connection = connectionInsert.rows[0];
@@ -864,6 +1030,13 @@ router.post('/onboarding', auth, async (req, res) => {
     if (error.code === '23505') {
       return res.status(409).json({ success: false, message: 'Aynı slug veya ürün bağlantısı zaten mevcut' });
     }
+
+    await deleteMobilKiraTakipOrganization(provisionedTenant?.id);
+
+    if (error.status) {
+      return res.status(error.status).json({ success: false, message: error.message });
+    }
+
     return res.status(500).json({ success: false, message: error.message });
   } finally {
     client.release();
