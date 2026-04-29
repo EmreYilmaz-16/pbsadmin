@@ -247,6 +247,46 @@ const deleteMobilKiraTakipOrganization = async (organizationId, token, baseUrlOv
   }
 };
 
+const updateMobilKiraTakipAdminCredentials = async ({
+  organizationId,
+  currentEmail,
+  nextEmail,
+  nextPassword
+}) => {
+  if (!organizationId) {
+    throw createProvisioningError('MobilKiraTakip tenant kimliği bulunamadı');
+  }
+
+  if (nextEmail === undefined && nextPassword === undefined) {
+    return null;
+  }
+
+  const session = await loginToMobilKiraTakipPlatform();
+  const response = await fetch(
+    buildRemoteUrl(session.baseUrl, `/api/v1/organizations/${organizationId}/admin-credentials`, `/api/v1/organizations/${organizationId}/admin-credentials`),
+    {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        Authorization: `Bearer ${session.token}`
+      },
+      body: JSON.stringify({
+        current_email: currentEmail || null,
+        admin_email: nextEmail === undefined ? undefined : nextEmail,
+        admin_password: nextPassword === undefined ? undefined : nextPassword
+      })
+    }
+  );
+
+  const payload = await safeParseJson(response);
+  if (!response.ok || payload?.success === false) {
+    throw createProvisioningError(payload?.message || `MobilKiraTakip admin güncellemesi başarısız (${response.status})`, 502);
+  }
+
+  return payload?.data || null;
+};
+
 const loadIntegrationConnection = async (connectionId) => {
   const { rows } = await query(
     `SELECT c.*, o.name AS organization_name, o.slug AS organization_slug,
@@ -804,22 +844,54 @@ router.patch('/integrations/:id', auth, async (req, res) => {
     return res.status(400).json({ success: false, message: 'Güncellenecek entegrasyon alanı bulunamadı' });
   }
 
-  values.push(req.params.id);
+  try {
+    const existingConnection = await loadIntegrationConnection(req.params.id);
+    if (!existingConnection) {
+      return res.status(404).json({ success: false, message: 'API bağlantısı bulunamadı' });
+    }
 
-  const { rows } = await query(
-    `UPDATE product_api_connections
-        SET ${updates.join(', ')},
-            updated_at = NOW()
-      WHERE id = $${values.length}
-      RETURNING *`,
-    values
-  );
+    const shouldSyncMobilKiraTakipCredentials = (
+      (payload.login_email !== undefined || payload.login_password !== undefined)
+      && existingConnection.sync_type === 'mobilkiratakip_property_management'
+      && existingConnection.metadata?.remote_tenant?.id
+    );
 
-  if (!rows.length) {
-    return res.status(404).json({ success: false, message: 'API bağlantısı bulunamadı' });
+    if (shouldSyncMobilKiraTakipCredentials) {
+      await updateMobilKiraTakipAdminCredentials({
+        organizationId: existingConnection.metadata.remote_tenant.id,
+        currentEmail: existingConnection.login_email,
+        nextEmail: payload.login_email !== undefined ? (String(payload.login_email || '').trim() || null) : undefined,
+        nextPassword: payload.login_password !== undefined ? String(payload.login_password || '') : undefined
+      });
+    }
+
+    values.push(req.params.id);
+
+    const { rows } = await query(
+      `UPDATE product_api_connections
+          SET ${updates.join(', ')},
+              updated_at = NOW()
+        WHERE id = $${values.length}
+        RETURNING *`,
+      values
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({ success: false, message: 'API bağlantısı bulunamadı' });
+    }
+
+    return res.json({ success: true, data: rows[0] });
+  } catch (error) {
+    if (error.code === '23505') {
+      return res.status(409).json({ success: false, message: 'Aynı entegrasyon bilgileri zaten kullanımda' });
+    }
+
+    if (error.status) {
+      return res.status(error.status).json({ success: false, message: error.message });
+    }
+
+    return res.status(500).json({ success: false, message: error.message });
   }
-
-  return res.json({ success: true, data: rows[0] });
 });
 
 router.post('/onboarding', auth, async (req, res) => {
