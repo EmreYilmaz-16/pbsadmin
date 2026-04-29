@@ -14,7 +14,7 @@ const fetchJson = async (path, options = {}) => {
 
   const payload = await response.json();
   if (!response.ok || payload.success === false) {
-    throw new Error(payload.message || 'İstek başarısız');
+    throw new Error(payload.message || '─░stek ba┼şar─▒s─▒z');
   }
 
   return payload;
@@ -78,20 +78,20 @@ function getOrganizationIntegrationSummary(organization) {
   }
 
   if (integrations.some((integration) => integration.status === 'degraded')) {
-    return { label: 'İzlenmeli', tone: 'integration-degraded' };
+    return { label: '─░zlenmeli', tone: 'integration-degraded' };
   }
 
   if (integrations.every((integration) => integration.status === 'healthy')) {
-    return { label: 'Sağlıklı', tone: 'integration-healthy' };
+    return { label: 'Sa─şl─▒kl─▒', tone: 'integration-healthy' };
   }
 
   return { label: 'Beklemede', tone: 'integration-pending' };
 }
 
 const invoiceStatusLabel = {
-  paid: 'Ödendi',
-  unpaid: 'Ödenmedi',
-  overdue: 'Gecikmiş'
+  paid: '├ûdendi',
+  unpaid: '├ûdenmedi',
+  overdue: 'Gecikmi┼ş'
 };
 
 function MetricEditor({ subscription, draft, onChange, onSave, isSaving }) {
@@ -123,7 +123,7 @@ function MetricEditor({ subscription, draft, onChange, onSave, isSaving }) {
         );
       })}
       <button type="button" className="secondary-button" onClick={() => onSave(subscription)} disabled={isSaving}>
-        {isSaving ? 'Kaydediliyor...' : 'Kullanımı Güncelle'}
+        {isSaving ? 'Kaydediliyor...' : 'Kullan─▒m─▒ G├╝ncelle'}
       </button>
     </div>
   );
@@ -150,7 +150,7 @@ function OrganizationEditor({ organization, onSave, isSaving }) {
     <div className="editor-card">
       <div className="editor-head">
         <div>
-          <div className="eyebrow">Organizasyon Ayarları</div>
+          <div className="eyebrow">Organizasyon Ayarlar─▒</div>
           <strong>{organization.name}</strong>
         </div>
       </div>
@@ -164,7 +164,7 @@ function OrganizationEditor({ organization, onSave, isSaving }) {
           <input value={form.slug} onChange={(event) => setForm({ ...form, slug: event.target.value })} />
         </label>
         <label>
-          <span>İletişim E-postası</span>
+          <span>─░leti┼şim E-postas─▒</span>
           <input type="email" value={form.contact_email} onChange={(event) => setForm({ ...form, contact_email: event.target.value })} />
         </label>
         <label>
@@ -174,7 +174,7 @@ function OrganizationEditor({ organization, onSave, isSaving }) {
       </div>
       <div className="editor-actions">
         <button type="button" className="secondary-button" onClick={() => onSave(organization.id, form)} disabled={isSaving}>
-          {isSaving ? 'Kaydediliyor...' : 'Organizasyonu Güncelle'}
+          {isSaving ? 'Kaydediliyor...' : 'Organizasyonu G├╝ncelle'}
         </button>
       </div>
     </div>
@@ -198,26 +198,26 @@ function SubscriptionPlanEditor({ subscription, plans, onSave, isSaving }) {
     <div className="editor-card editor-card-soft">
       <div className="editor-head">
         <div>
-          <div className="eyebrow">Paket Yönetimi</div>
-          <strong>{subscription.product_template.name} planını güncelle</strong>
+          <div className="eyebrow">Paket Y├Ânetimi</div>
+          <strong>{subscription.product_template.name} plan─▒n─▒ g├╝ncelle</strong>
         </div>
       </div>
       <div className="form-grid two editor-form">
         <label>
-          <span>Fiyat Planı</span>
+          <span>Fiyat Plan─▒</span>
           <select value={pricingPlanId} onChange={(event) => setPricingPlanId(event.target.value)}>
-            <option value="">Plan seçin</option>
+            <option value="">Plan se├ğin</option>
             {plans.map((plan) => (
-              <option key={plan.id} value={plan.id}>{plan.name} • {currency.format(plan.monthly_price)}</option>
+              <option key={plan.id} value={plan.id}>{plan.name} ÔÇó {currency.format(plan.monthly_price)}</option>
             ))}
           </select>
         </label>
         <label>
-          <span>İşlem Notu</span>
-          <input value={note} onChange={(event) => setNote(event.target.value)} placeholder="Opsiyonel açıklama" />
+          <span>─░┼şlem Notu</span>
+          <input value={note} onChange={(event) => setNote(event.target.value)} placeholder="Opsiyonel a├ğ─▒klama" />
         </label>
       </div>
-      <div className="editor-note">Property Management ürününde bu işlem MobilKiraTakip tenant paketini de günceller.</div>
+      <div className="editor-note">Property Management ├╝r├╝n├╝nde bu i┼şlem MobilKiraTakip tenant paketini de g├╝nceller.</div>
       <div className="editor-actions">
         <button
           type="button"
@@ -225,7 +225,7 @@ function SubscriptionPlanEditor({ subscription, plans, onSave, isSaving }) {
           onClick={() => onSave(subscription.id, { pricing_plan_id: pricingPlanId, note })}
           disabled={isSaving || !pricingPlanId || pricingPlanId === (subscription.pricing_plan?.id || '')}
         >
-          {isSaving ? 'Paket güncelleniyor...' : 'Paketi Güncelle'}
+          {isSaving ? 'Paket g├╝ncelleniyor...' : 'Paketi G├╝ncelle'}
         </button>
       </div>
     </div>
@@ -240,7 +240,7 @@ function PlanRequestPanel({ requests, onResolve, resolvingId }) {
       <div className="panel-head">
         <div>
           <div className="eyebrow">MobilKiraTakip Talepleri</div>
-          <h3>Paket yükseltme talepleri site admin paneline düşüyor</h3>
+          <h3>Paket y├╝kseltme talepleri site admin paneline d├╝┼ş├╝yor</h3>
         </div>
       </div>
       <div className="invoice-summary-strip">
@@ -253,14 +253,14 @@ function PlanRequestPanel({ requests, onResolve, resolvingId }) {
           <div className="invoice-row" key={request.id}>
             <div>
               <strong>{request.local_organization_name || request.organization_name}</strong>
-              <span>{request.metadata?.current_plan || '-'} → {request.metadata?.requested_plan || '-'}</span>
-              <span>{request.actor_name || '-'} • {request.actor_email || '-'} • {new Date(request.created_at).toLocaleString('tr-TR')}</span>
+              <span>{request.metadata?.current_plan || '-'} ÔåÆ {request.metadata?.requested_plan || '-'}</span>
+              <span>{request.actor_name || '-'} ÔÇó {request.actor_email || '-'} ÔÇó {new Date(request.created_at).toLocaleString('tr-TR')}</span>
               <span>{request.metadata?.note || request.description || 'Not yok'}</span>
-              {request.decision && <span>Karar: {request.decision.event_label} • {request.decision.note || 'Not yok'}</span>}
+              {request.decision && <span>Karar: {request.decision.event_label} ÔÇó {request.decision.note || 'Not yok'}</span>}
             </div>
             <div className="invoice-actions">
               <span className={`status-pill ${request.status === 'approved' ? 'active' : request.status === 'rejected' ? 'inactive' : 'integration-pending'}`}>
-                {request.status === 'approved' ? 'Onaylandı' : request.status === 'rejected' ? 'Reddedildi' : 'Bekliyor'}
+                {request.status === 'approved' ? 'Onayland─▒' : request.status === 'rejected' ? 'Reddedildi' : 'Bekliyor'}
               </span>
               {request.status === 'pending' && (
                 <>
@@ -270,7 +270,7 @@ function PlanRequestPanel({ requests, onResolve, resolvingId }) {
                     onClick={() => onResolve(request, 'approve')}
                     disabled={resolvingId === request.id}
                   >
-                    {resolvingId === request.id ? 'İşleniyor...' : 'Onayla'}
+                    {resolvingId === request.id ? '─░┼şleniyor...' : 'Onayla'}
                   </button>
                   <button
                     type="button"
@@ -278,13 +278,13 @@ function PlanRequestPanel({ requests, onResolve, resolvingId }) {
                     onClick={() => onResolve(request, 'reject')}
                     disabled={resolvingId === request.id}
                   >
-                    {resolvingId === request.id ? 'İşleniyor...' : 'Reddet'}
+                    {resolvingId === request.id ? '─░┼şleniyor...' : 'Reddet'}
                   </button>
                 </>
               )}
             </div>
           </div>
-        )) : <div className="invoice-row"><div><strong>Talep yok</strong><span>MobilKiraTakip tarafından açılan paket yükseltme talebi henüz gelmedi.</span></div></div>}
+        )) : <div className="invoice-row"><div><strong>Talep yok</strong><span>MobilKiraTakip taraf─▒ndan a├ğ─▒lan paket y├╝kseltme talebi hen├╝z gelmedi.</span></div></div>}
       </div>
     </div>
   );
@@ -321,7 +321,7 @@ function IntegrationEditor({ integration, onSave, isSaving }) {
     <div className="editor-card editor-card-soft">
       <div className="editor-head">
         <div>
-          <div className="eyebrow">Entegrasyon Düzenle</div>
+          <div className="eyebrow">Entegrasyon D├╝zenle</div>
           <strong>{integration.base_url}</strong>
         </div>
       </div>
@@ -343,12 +343,12 @@ function IntegrationEditor({ integration, onSave, isSaving }) {
           <input value={form.me_path} onChange={(event) => setForm({ ...form, me_path: event.target.value })} />
         </label>
         <label>
-          <span>Login E-postası</span>
+          <span>Login E-postas─▒</span>
           <input type="email" value={form.login_email} onChange={(event) => setForm({ ...form, login_email: event.target.value })} />
         </label>
         <label>
-          <span>Yeni Login Şifresi</span>
-          <input type="password" value={form.login_password} onChange={(event) => setForm({ ...form, login_password: event.target.value })} placeholder="Boş bırakırsanız değişmez" />
+          <span>Yeni Login ┼Şifresi</span>
+          <input type="password" value={form.login_password} onChange={(event) => setForm({ ...form, login_password: event.target.value })} placeholder="Bo┼ş b─▒rak─▒rsan─▒z de─şi┼şmez" />
         </label>
         <label>
           <span>Auth Type</span>
@@ -366,14 +366,14 @@ function IntegrationEditor({ integration, onSave, isSaving }) {
           <span>Senkronizasyon Tipi</span>
           <select value={form.sync_type} onChange={(event) => setForm({ ...form, sync_type: event.target.value })}>
             <option value="none">Senkronizasyon yok</option>
-            <option value="mobilkiratakip_property_management">MobilKiraTakip kullanım senkronizasyonu</option>
+            <option value="mobilkiratakip_property_management">MobilKiraTakip kullan─▒m senkronizasyonu</option>
           </select>
         </label>
       </div>
-      <div className="editor-note">Şifre alanı yalnızca yeni bir değer yazarsanız güncellenir.</div>
+      <div className="editor-note">┼Şifre alan─▒ yaln─▒zca yeni bir de─şer yazarsan─▒z g├╝ncellenir.</div>
       <div className="editor-actions">
         <button type="button" className="secondary-button" onClick={() => onSave(integration.id, form)} disabled={isSaving}>
-          {isSaving ? 'Kaydediliyor...' : 'Entegrasyonu Güncelle'}
+          {isSaving ? 'Kaydediliyor...' : 'Entegrasyonu G├╝ncelle'}
         </button>
       </div>
     </div>
@@ -470,7 +470,7 @@ function OnboardingForm({ templates, plans, onCreate, isSaving }) {
       <div className="panel-head">
         <div>
           <div className="eyebrow">Yeni Kiralama</div>
-          <h3>Organizasyon + ürün aboneliği aç</h3>
+          <h3>Organizasyon + ├╝r├╝n aboneli─şi a├ğ</h3>
         </div>
       </div>
 
@@ -484,7 +484,7 @@ function OnboardingForm({ templates, plans, onCreate, isSaving }) {
           <input value={form.slug} onChange={(event) => setForm({ ...form, slug: event.target.value })} placeholder="opsiyonel" />
         </label>
         <label>
-          <span>İletişim E-postası</span>
+          <span>─░leti┼şim E-postas─▒</span>
           <input type="email" value={form.contact_email} onChange={(event) => setForm({ ...form, contact_email: event.target.value })} />
         </label>
         <label>
@@ -495,36 +495,36 @@ function OnboardingForm({ templates, plans, onCreate, isSaving }) {
 
       <div className="form-grid three">
         <label>
-          <span>Ürün</span>
+          <span>├£r├╝n</span>
           <select value={selectedTemplateId} onChange={(event) => { setSelectedTemplateId(event.target.value); setSelectedPlanId(''); }} required>
-            <option value="">Ürün seçin</option>
+            <option value="">├£r├╝n se├ğin</option>
             {templates.map((template) => (
               <option key={template.id} value={template.id}>{template.name}</option>
             ))}
           </select>
         </label>
         <label>
-          <span>Plan Kataloğu</span>
+          <span>Plan Katalo─şu</span>
           <select value={selectedPlanId} onChange={(event) => setSelectedPlanId(event.target.value)} disabled={!selectedTemplateId}>
-            <option value="">Elle tanımla / plan seç</option>
+            <option value="">Elle tan─▒mla / plan se├ğ</option>
             {availablePlans.map((plan) => (
-              <option key={plan.id} value={plan.id}>{plan.name} • {currency.format(plan.monthly_price)}</option>
+              <option key={plan.id} value={plan.id}>{plan.name} ÔÇó {currency.format(plan.monthly_price)}</option>
             ))}
           </select>
         </label>
         <label>
-          <span>Plan Adı</span>
+          <span>Plan Ad─▒</span>
           <input value={form.plan_name} onChange={(event) => setForm({ ...form, plan_name: event.target.value })} required />
         </label>
       </div>
 
       <div className="form-grid three">
         <label>
-          <span>Aylık Bedel</span>
+          <span>Ayl─▒k Bedel</span>
           <input type="number" min="0" value={form.base_price} onChange={(event) => setForm({ ...form, base_price: event.target.value })} />
         </label>
         <label>
-          <span>Fatura Döngüsü (ay)</span>
+          <span>Fatura D├Âng├╝s├╝ (ay)</span>
           <input type="number" min="1" value={form.billing_cycle_months} onChange={(event) => setForm({ ...form, billing_cycle_months: event.target.value })} />
         </label>
         <label>
@@ -555,25 +555,25 @@ function OnboardingForm({ templates, plans, onCreate, isSaving }) {
           <span>Senkronizasyon Tipi</span>
           <select value={form.sync_type} onChange={(event) => setForm({ ...form, sync_type: event.target.value })}>
             <option value="none">Senkronizasyon yok</option>
-            <option value="mobilkiratakip_property_management">MobilKiraTakip kullanım senkronizasyonu</option>
+            <option value="mobilkiratakip_property_management">MobilKiraTakip kullan─▒m senkronizasyonu</option>
           </select>
         </label>
       </div>
 
       <div className="form-grid two">
         <label>
-          <span>Entegrasyon Login E-postası</span>
+          <span>Entegrasyon Login E-postas─▒</span>
           <input type="email" value={form.login_email} onChange={(event) => setForm({ ...form, login_email: event.target.value })} placeholder="tenant-admin@example.com" />
         </label>
         <label>
-          <span>Entegrasyon Login Şifresi</span>
-          <input type="password" value={form.login_password} onChange={(event) => setForm({ ...form, login_password: event.target.value })} placeholder="Harici ürün şifresi" />
+          <span>Entegrasyon Login ┼Şifresi</span>
+          <input type="password" value={form.login_password} onChange={(event) => setForm({ ...form, login_password: event.target.value })} placeholder="Harici ├╝r├╝n ┼şifresi" />
         </label>
       </div>
 
       {selectedTemplate && (
         <div className="metric-config">
-          <div className="section-title">Kota ve kullanım tanımı</div>
+          <div className="section-title">Kota ve kullan─▒m tan─▒m─▒</div>
           <div className="form-grid two">
             {selectedTemplate.metric_definitions.map((metric) => (
               <div className="metric-config-row" key={metric.key}>
@@ -582,7 +582,7 @@ function OnboardingForm({ templates, plans, onCreate, isSaving }) {
                   <input type="number" min="0" value={limits[metric.key] ?? 0} onChange={(event) => setLimits({ ...limits, [metric.key]: Number(event.target.value) })} />
                 </label>
                 <label>
-                  <span>{metric.label} mevcut kullanım</span>
+                  <span>{metric.label} mevcut kullan─▒m</span>
                   <input type="number" min="0" value={usage[metric.key] ?? 0} onChange={(event) => setUsage({ ...usage, [metric.key]: Number(event.target.value) })} />
                 </label>
               </div>
@@ -611,7 +611,7 @@ function OnboardingForm({ templates, plans, onCreate, isSaving }) {
       </div>
 
       <button className="primary-button" disabled={isSaving}>
-        {isSaving ? 'Açılıyor...' : 'Organizasyonu Aç'}
+        {isSaving ? 'A├ğ─▒l─▒yor...' : 'Organizasyonu A├ğ'}
       </button>
     </form>
   );
@@ -644,46 +644,64 @@ function OrganizationWorkspace({
   exportingScope
 }) {
   const integrationSummary = getOrganizationIntegrationSummary(organization);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [selectedSubscriptionId, setSelectedSubscriptionId] = useState(organization.subscriptions[0]?.id || '');
+
+  useEffect(() => {
+    setActiveTab('overview');
+    setSelectedSubscriptionId(organization.subscriptions[0]?.id || '');
+  }, [organization.id]);
+
+  const selectedSubscription = organization.subscriptions.find((subscription) => subscription.id === selectedSubscriptionId)
+    || organization.subscriptions[0]
+    || null;
+
+  const workspaceTabs = [
+    { id: 'overview', label: 'Genel Bakis' },
+    { id: 'operations', label: 'Operasyon' },
+    { id: 'integration', label: 'Entegrasyon' },
+    { id: 'billing', label: 'Faturalama' }
+  ];
 
   return (
     <section className="workspace-shell">
       <div className="workspace-header panel">
         <div>
-          <div className="eyebrow">Organizasyon Detay Sayfası</div>
+          <div className="eyebrow">Organizasyon Detay Sayfas─▒</div>
           <h2>{organization.name}</h2>
-          <p>{organization.slug} • {organization.contact_email || 'E-posta yok'} • {organization.contact_phone || 'Telefon yok'}</p>
+          <p>{organization.slug} ÔÇó {organization.contact_email || 'E-posta yok'} ÔÇó {organization.contact_phone || 'Telefon yok'}</p>
         </div>
         <div className="workspace-actions">
           <span className={`status-pill ${organization.is_active ? 'active' : 'inactive'}`}>
             {organization.is_active ? 'Aktif organizasyon' : 'Pasif organizasyon'}
           </span>
-          <button type="button" className="secondary-button" onClick={onBack}>Organizasyon Listesine Dön</button>
+          <button type="button" className="secondary-button" onClick={onBack}>Organizasyon Listesine D├Ân</button>
         </div>
       </div>
 
       <section className="workspace-summary-grid">
         <SummaryCard
-          label="Abonelik Sayısı"
+          label="Abonelik Say─▒s─▒"
           value={organization.subscriptions.length}
-          detail="bu organizasyona bağlı ürün"
+          detail="bu organizasyona ba─şl─▒ ├╝r├╝n"
           tone="sky"
         />
         <SummaryCard
-          label="Aylık Gelir"
+          label="Ayl─▒k Gelir"
           value={currency.format(getOrganizationMonthlyRevenue(organization))}
-          detail="aktif ve trial gelir toplamı"
+          detail="aktif ve trial gelir toplam─▒"
           tone="emerald"
         />
         <SummaryCard
-          label="Açık Tahsilat"
+          label="A├ğ─▒k Tahsilat"
           value={currency.format(getOrganizationOpenReceivable(organization))}
-          detail="organizasyon bazlı tahsilat durumu"
+          detail="organizasyon bazl─▒ tahsilat durumu"
           tone="amber"
         />
         <SummaryCard
           label="Entegrasyon"
           value={integrationSummary.label}
-          detail="bağlantı sağlık özeti"
+          detail="ba─şlant─▒ sa─şl─▒k ├Âzeti"
           tone="rose"
         />
       </section>
@@ -698,127 +716,204 @@ function OrganizationWorkspace({
           <div className="panel workspace-subscription-index">
             <div className="panel-head compact-head">
               <div>
-                <div className="eyebrow">Ürünler</div>
-                <h3>Bağlı abonelikler</h3>
+                <div className="eyebrow">├£r├╝nler</div>
+                <h3>Ba─şl─▒ abonelikler</h3>
               </div>
             </div>
             <div className="workspace-index-list">
               {organization.subscriptions.map((subscription) => (
-                <div className="workspace-index-item" key={`${organization.id}-${subscription.id}`}>
+                <button
+                  type="button"
+                  className={`workspace-index-item ${selectedSubscription?.id === subscription.id ? 'is-active' : ''}`}
+                  key={`${organization.id}-${subscription.id}`}
+                  onClick={() => setSelectedSubscriptionId(subscription.id)}
+                >
                   <strong>{subscription.product_template.name}</strong>
                   <span>{subscription.plan_name}</span>
                   <span>{currency.format(subscription.base_price)} / {subscription.billing_cycle_months} ay</span>
-                </div>
+                </button>
               ))}
             </div>
           </div>
         </div>
 
         <div className="workspace-main">
-          {organization.subscriptions.map((subscription) => (
-            <div className="subscription-card workspace-subscription-card" key={subscription.id}>
-              <div className="subscription-head">
-                <div>
-                  <div className="subscription-product">{subscription.product_template.name}</div>
-                  <h3>{subscription.plan_name}</h3>
-                  <p>{currency.format(subscription.base_price)} / {subscription.billing_cycle_months} ay • Yenileme: {subscription.renewal_at ? new Date(subscription.renewal_at).toLocaleDateString('tr-TR') : '-'}</p>
-                  {subscription.pricing_plan && <p>{subscription.pricing_plan.name} • Plan kataloğundan bağlı</p>}
-                </div>
-                <span className={`status-pill status-${subscription.status}`}>{subscription.status}</span>
-              </div>
-
-              <MetricEditor
-                subscription={subscription}
-                draft={usageDrafts[subscription.id]}
-                onChange={onUsageChange}
-                onSave={onSaveUsage}
-                isSaving={savingSubscriptionId === subscription.id}
-              />
-
-              <SubscriptionPlanEditor
-                subscription={subscription}
-                plans={plans.filter((plan) => plan.product_template_id === subscription.product_template.id)}
-                onSave={onSavePlan}
-                isSaving={savingPlanSubscriptionId === subscription.id}
-              />
-
-              {subscription.integration && (
-                <Fragment>
-                  <div className="integration-box">
-                    <div>
-                      <div className="eyebrow">API Entegrasyonu</div>
-                      <strong>{subscription.integration.base_url}</strong>
-                      <div className="integration-meta">{subscription.integration.health_path} • {subscription.integration.last_health_message || 'Health-check yok'}</div>
-                      <div className="integration-meta">Login: {subscription.integration.login_email || 'tanımsız'} • Sync: {subscription.integration.sync_type || 'none'}</div>
-                    </div>
-                    <div className="integration-actions">
-                      <span className={`status-pill integration-${subscription.integration.status}`}>{subscription.integration.status}</span>
-                      <div className="action-wrap">
-                        <button type="button" className="ghost-button" onClick={() => onProbeConnection(subscription.integration.id)} disabled={probingConnectionId === subscription.integration.id}>
-                          {probingConnectionId === subscription.integration.id ? 'Test ediliyor...' : 'Health Probe'}
-                        </button>
-                        <button type="button" className="ghost-button" onClick={() => onProbeConnection(subscription.integration.id, 'login')} disabled={probingConnectionId === subscription.integration.id}>
-                          {probingConnectionId === subscription.integration.id ? 'Login deneniyor...' : 'Login Probe'}
-                        </button>
-                        <button type="button" className="secondary-button" onClick={() => onSyncConnection(subscription.integration.id)} disabled={syncingConnectionId === subscription.integration.id}>
-                          {syncingConnectionId === subscription.integration.id ? 'Senkronize ediliyor...' : 'Tenant Sync'}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  <IntegrationEditor
-                    integration={subscription.integration}
-                    onSave={onSaveIntegration}
-                    isSaving={savingIntegrationId === subscription.integration.id}
-                  />
-                </Fragment>
-              )}
-
-              <div className="billing-box">
-                <div className="billing-head">
-                  <div>
-                    <div className="eyebrow">Faturalama</div>
-                    <strong>{subscription.invoice_summary.total} fatura • {currency.format(subscription.invoice_summary.amount_total)}</strong>
-                    <div className="integration-meta">Açık: {subscription.invoice_summary.unpaid_count + subscription.invoice_summary.overdue_count} • Gecikmiş: {subscription.invoice_summary.overdue_count} • Tahsil edilen: {currency.format(subscription.invoice_summary.paid_total || 0)}</div>
-                  </div>
-                  <div className="action-wrap">
-                    <button type="button" className="ghost-button" onClick={() => onExportBilling(organization.id)} disabled={exportingScope === organization.id}>
-                      {exportingScope === organization.id ? 'CSV...' : 'CSV Aktar'}
+          {selectedSubscription && (
+            <>
+              <div className="panel workspace-tab-panel">
+                <div className="workspace-tab-list" role="tablist" aria-label="Organizasyon detay sekmeleri">
+                  {workspaceTabs.map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      className={`workspace-tab ${activeTab === tab.id ? 'is-active' : ''}`}
+                      onClick={() => setActiveTab(tab.id)}
+                    >
+                      {tab.label}
                     </button>
-                    <button type="button" className="ghost-button" onClick={() => onCreateInvoice(subscription.id)} disabled={invoiceActionId === subscription.id}>
-                      {invoiceActionId === subscription.id ? 'Üretiliyor...' : 'Fatura Üret'}
-                    </button>
-                  </div>
-                </div>
-                <div className="invoice-list">
-                  {subscription.invoices.map((invoice) => (
-                    <div className="invoice-row" key={invoice.id}>
-                      <div>
-                        <strong>{invoice.invoice_number}</strong>
-                        <span>{currency.format(invoice.amount)} • Vade: {new Date(invoice.due_date).toLocaleDateString('tr-TR')}</span>
-                        <span>Tahsil edilen: {currency.format(invoice.paid_total || 0)} • Kalan: {currency.format(invoice.outstanding_amount || 0)}</span>
-                        <span>Son tahsilat: {invoice.payments?.[0]?.collected_at ? new Date(invoice.payments[0].collected_at).toLocaleString('tr-TR') : '-'}</span>
-                        {invoice.note && <span>Not: {invoice.note}</span>}
-                      </div>
-                      <div className="invoice-actions">
-                        <span className={`status-pill invoice-${invoice.status}`}>{invoiceStatusLabel[invoice.status] || invoice.status}</span>
-                        <button type="button" className="ghost-button" onClick={() => onUpdateInvoiceNote(invoice)} disabled={invoiceActionId === invoice.id}>Not</button>
-                        {invoice.outstanding_amount > 0 && (
-                          <button type="button" className="ghost-button" onClick={() => onRecordInvoicePayment(invoice)} disabled={invoiceActionId === invoice.id}>Ödeme Kaydı</button>
-                        )}
-                        {invoice.status !== 'paid' && (
-                          <button type="button" className="ghost-button" onClick={() => onSetInvoiceStatus(invoice.id, 'paid')} disabled={invoiceActionId === invoice.id}>Ödendi</button>
-                        )}
-                        {invoice.status === 'paid' && (
-                          <button type="button" className="ghost-button" onClick={() => onSetInvoiceStatus(invoice.id, 'unpaid')} disabled={invoiceActionId === invoice.id}>Açık Yap</button>
-                        )}
-                      </div>
-                    </div>
                   ))}
                 </div>
+                <div className="workspace-selected-hero">
+                  <div>
+                    <div className="subscription-product">{selectedSubscription.product_template.name}</div>
+                    <h3>{selectedSubscription.plan_name}</h3>
+                    <p>{currency.format(selectedSubscription.base_price)} / {selectedSubscription.billing_cycle_months} ay - Yenileme: {selectedSubscription.renewal_at ? new Date(selectedSubscription.renewal_at).toLocaleDateString('tr-TR') : '-'}</p>
+                  </div>
+                  <span className={`status-pill status-${selectedSubscription.status}`}>{selectedSubscription.status}</span>
+                </div>
               </div>
-            </div>
-          ))}
+
+              {activeTab === 'overview' && (
+                <div className="workspace-overview-grid">
+                  <div className="subscription-card workspace-subscription-card">
+                    <div className="subscription-head">
+                      <div>
+                        <div className="eyebrow">Plan Ozeti</div>
+                        <h3>{selectedSubscription.plan_name}</h3>
+                        <p>{selectedSubscription.pricing_plan ? `${selectedSubscription.pricing_plan.name} - Plan katalogundan bagli` : 'Ozel plan tanimi'}</p>
+                      </div>
+                      <span className={`status-pill status-${selectedSubscription.status}`}>{selectedSubscription.status}</span>
+                    </div>
+                    <div className="workspace-facts-grid">
+                      <div className="workspace-fact-card"><span>Aylik Bedel</span><strong>{currency.format(selectedSubscription.base_price)}</strong></div>
+                      <div className="workspace-fact-card"><span>Fatura Dongusu</span><strong>{selectedSubscription.billing_cycle_months} ay</strong></div>
+                      <div className="workspace-fact-card"><span>Acik Tahsilat</span><strong>{currency.format(selectedSubscription.invoice_summary.amount_total || 0)}</strong></div>
+                      <div className="workspace-fact-card"><span>Entegrasyon</span><strong>{selectedSubscription.integration?.status || 'yok'}</strong></div>
+                    </div>
+                  </div>
+                  <div className="subscription-card workspace-subscription-card">
+                    <div className="panel-head compact-head">
+                      <div>
+                        <div className="eyebrow">Kullanim Ozeti</div>
+                        <h3>Secili urun metrikleri</h3>
+                      </div>
+                    </div>
+                    <div className="workspace-metric-list">
+                      {(selectedSubscription.product_template.metric_definitions || []).map((metric) => {
+                        const currentValue = usageDrafts[selectedSubscription.id]?.[metric.key] ?? selectedSubscription.current_usage?.[metric.key] ?? 0;
+                        const limitValue = selectedSubscription.metric_limits?.[metric.key] ?? 0;
+                        return (
+                          <div className="workspace-metric-row" key={`${selectedSubscription.id}-${metric.key}`}>
+                            <div>
+                              <strong>{metric.label}</strong>
+                              <span>{currentValue} / {limitValue} {metric.unit}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'operations' && (
+                <div className="subscription-card workspace-subscription-card">
+                  <MetricEditor
+                    subscription={selectedSubscription}
+                    draft={usageDrafts[selectedSubscription.id]}
+                    onChange={onUsageChange}
+                    onSave={onSaveUsage}
+                    isSaving={savingSubscriptionId === selectedSubscription.id}
+                  />
+                  <SubscriptionPlanEditor
+                    subscription={selectedSubscription}
+                    plans={plans.filter((plan) => plan.product_template_id === selectedSubscription.product_template.id)}
+                    onSave={onSavePlan}
+                    isSaving={savingPlanSubscriptionId === selectedSubscription.id}
+                  />
+                </div>
+              )}
+
+              {activeTab === 'integration' && (
+                <div className="subscription-card workspace-subscription-card">
+                  {selectedSubscription.integration ? (
+                    <Fragment>
+                      <div className="integration-box">
+                        <div>
+                          <div className="eyebrow">API Entegrasyonu</div>
+                          <strong>{selectedSubscription.integration.base_url}</strong>
+                          <div className="integration-meta">{selectedSubscription.integration.health_path} - {selectedSubscription.integration.last_health_message || 'Health-check yok'}</div>
+                          <div className="integration-meta">Login: {selectedSubscription.integration.login_email || 'tanimsiz'} - Sync: {selectedSubscription.integration.sync_type || 'none'}</div>
+                        </div>
+                        <div className="integration-actions">
+                          <span className={`status-pill integration-${selectedSubscription.integration.status}`}>{selectedSubscription.integration.status}</span>
+                          <div className="action-wrap">
+                            <button type="button" className="ghost-button" onClick={() => onProbeConnection(selectedSubscription.integration.id)} disabled={probingConnectionId === selectedSubscription.integration.id}>
+                              {probingConnectionId === selectedSubscription.integration.id ? 'Test ediliyor...' : 'Health Probe'}
+                            </button>
+                            <button type="button" className="ghost-button" onClick={() => onProbeConnection(selectedSubscription.integration.id, 'login')} disabled={probingConnectionId === selectedSubscription.integration.id}>
+                              {probingConnectionId === selectedSubscription.integration.id ? 'Login deneniyor...' : 'Login Probe'}
+                            </button>
+                            <button type="button" className="secondary-button" onClick={() => onSyncConnection(selectedSubscription.integration.id)} disabled={syncingConnectionId === selectedSubscription.integration.id}>
+                              {syncingConnectionId === selectedSubscription.integration.id ? 'Senkronize ediliyor...' : 'Tenant Sync'}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      <IntegrationEditor
+                        integration={selectedSubscription.integration}
+                        onSave={onSaveIntegration}
+                        isSaving={savingIntegrationId === selectedSubscription.integration.id}
+                      />
+                    </Fragment>
+                  ) : (
+                    <div className="empty-compact-state">
+                      <strong>Entegrasyon tanimi yok</strong>
+                      <span>Bu abonelik icin ayri bir API baglantisi bulunmuyor.</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'billing' && (
+                <div className="subscription-card workspace-subscription-card">
+                  <div className="billing-box workspace-billing-box">
+                    <div className="billing-head">
+                      <div>
+                        <div className="eyebrow">Faturalama</div>
+                        <strong>{selectedSubscription.invoice_summary.total} fatura - {currency.format(selectedSubscription.invoice_summary.amount_total)}</strong>
+                        <div className="integration-meta">Acik: {selectedSubscription.invoice_summary.unpaid_count + selectedSubscription.invoice_summary.overdue_count} - Gecikmis: {selectedSubscription.invoice_summary.overdue_count} - Tahsil edilen: {currency.format(selectedSubscription.invoice_summary.paid_total || 0)}</div>
+                      </div>
+                      <div className="action-wrap">
+                        <button type="button" className="ghost-button" onClick={() => onExportBilling(organization.id)} disabled={exportingScope === organization.id}>
+                          {exportingScope === organization.id ? 'CSV...' : 'CSV Aktar'}
+                        </button>
+                        <button type="button" className="ghost-button" onClick={() => onCreateInvoice(selectedSubscription.id)} disabled={invoiceActionId === selectedSubscription.id}>
+                          {invoiceActionId === selectedSubscription.id ? 'Uretiliyor...' : 'Fatura Uret'}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="invoice-list">
+                      {selectedSubscription.invoices.map((invoice) => (
+                        <div className="invoice-row" key={invoice.id}>
+                          <div>
+                            <strong>{invoice.invoice_number}</strong>
+                            <span>{currency.format(invoice.amount)} - Vade: {new Date(invoice.due_date).toLocaleDateString('tr-TR')}</span>
+                            <span>Tahsil edilen: {currency.format(invoice.paid_total || 0)} - Kalan: {currency.format(invoice.outstanding_amount || 0)}</span>
+                            <span>Son tahsilat: {invoice.payments?.[0]?.collected_at ? new Date(invoice.payments[0].collected_at).toLocaleString('tr-TR') : '-'}</span>
+                            {invoice.note && <span>Not: {invoice.note}</span>}
+                          </div>
+                          <div className="invoice-actions">
+                            <span className={`status-pill invoice-${invoice.status}`}>{invoiceStatusLabel[invoice.status] || invoice.status}</span>
+                            <button type="button" className="ghost-button" onClick={() => onUpdateInvoiceNote(invoice)} disabled={invoiceActionId === invoice.id}>Not</button>
+                            {invoice.outstanding_amount > 0 && (
+                              <button type="button" className="ghost-button" onClick={() => onRecordInvoicePayment(invoice)} disabled={invoiceActionId === invoice.id}>Odeme Kaydi</button>
+                            )}
+                            {invoice.status !== 'paid' && (
+                              <button type="button" className="ghost-button" onClick={() => onSetInvoiceStatus(invoice.id, 'paid')} disabled={invoiceActionId === invoice.id}>Odendi</button>
+                            )}
+                            {invoice.status === 'paid' && (
+                              <button type="button" className="ghost-button" onClick={() => onSetInvoiceStatus(invoice.id, 'unpaid')} disabled={invoiceActionId === invoice.id}>Acik Yap</button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </section>
     </section>
@@ -1179,17 +1274,17 @@ export default function App() {
       return;
     }
 
-    const paymentMethod = window.prompt('Ödeme yöntemi', 'bank_transfer');
+    const paymentMethod = window.prompt('├ûdeme y├Ântemi', 'bank_transfer');
     if (paymentMethod === null) {
       return;
     }
 
-    const collectedAt = window.prompt('Tahsilat tarihi (ISO veya boş bırakın)', new Date().toISOString().slice(0, 16));
+    const collectedAt = window.prompt('Tahsilat tarihi (ISO veya bo┼ş b─▒rak─▒n)', new Date().toISOString().slice(0, 16));
     if (collectedAt === null) {
       return;
     }
 
-    const note = window.prompt('Ödeme notu', '');
+    const note = window.prompt('├ûdeme notu', '');
     if (note === null) {
       return;
     }
@@ -1224,7 +1319,7 @@ export default function App() {
       });
       if (!response.ok) {
         const payload = await response.text();
-        throw new Error(payload || 'CSV dışa aktarım başarısız');
+        throw new Error(payload || 'CSV d─▒┼şa aktar─▒m ba┼şar─▒s─▒z');
       }
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -1299,18 +1394,18 @@ export default function App() {
       <div className="login-shell">
         <div className="login-panel">
           <div className="eyebrow">PBS Site Admin</div>
-          <h1>Çoklu ürün kiralama yönetimi</h1>
-          <p>Mülk yönetimi, filo takip ve klinik uygulaması gibi ürünleri tek super admin panelinden yönetin.</p>
+          <h1>├çoklu ├╝r├╝n kiralama y├Ânetimi</h1>
+          <p>M├╝lk y├Ânetimi, filo takip ve klinik uygulamas─▒ gibi ├╝r├╝nleri tek super admin panelinden y├Ânetin.</p>
           <form onSubmit={handleLogin} className="login-form">
             <label>
               <span>E-posta</span>
               <input type="email" value={credentials.email} onChange={(event) => setCredentials({ ...credentials, email: event.target.value })} />
             </label>
             <label>
-              <span>Şifre</span>
+              <span>┼Şifre</span>
               <input type="password" value={credentials.password} onChange={(event) => setCredentials({ ...credentials, password: event.target.value })} />
             </label>
-            <button className="primary-button" disabled={loading}>{loading ? 'Giriş yapılıyor...' : 'Panele Gir'}</button>
+            <button className="primary-button" disabled={loading}>{loading ? 'Giri┼ş yap─▒l─▒yor...' : 'Panele Gir'}</button>
           </form>
           {error && <div className="error-box">{error}</div>}
         </div>
@@ -1322,9 +1417,9 @@ export default function App() {
     <div className="app-shell">
       <header className="hero">
         <div>
-          <div className="eyebrow">Merkezi Kiralama Yönetimi</div>
-          <h1>PBS ürün ailesi için daha net operasyon yüzeyi</h1>
-          <p>Yoğun işleri tek akışta toplayan, daha kısa satırlı ve filtrelenebilir bir yönetim ekranı.</p>
+          <div className="eyebrow">Merkezi Kiralama Y├Ânetimi</div>
+          <h1>PBS ├╝r├╝n ailesi i├ğin daha net operasyon y├╝zeyi</h1>
+          <p>Yo─şun i┼şleri tek ak─▒┼şta toplayan, daha k─▒sa sat─▒rl─▒ ve filtrelenebilir bir y├Ânetim ekran─▒.</p>
         </div>
         <div className="hero-actions">
           <div className="hero-kpis">
@@ -1341,31 +1436,31 @@ export default function App() {
             <strong>{user?.name}</strong>
             <span>{user?.email}</span>
           </div>
-          <button type="button" className="ghost-button" onClick={logout}>Çıkış</button>
+          <button type="button" className="ghost-button" onClick={logout}>├ç─▒k─▒┼ş</button>
         </div>
       </header>
 
       {error && <div className="error-box floating">{error}</div>}
 
       {loading ? (
-        <div className="panel">Yükleniyor...</div>
+        <div className="panel">Y├╝kleniyor...</div>
       ) : (
         <>
           <section className="summary-grid">
             <SummaryCard label="Toplam Organizasyon" value={summary?.organization_count ?? 0} detail={`${summary?.active_organization_count ?? 0} aktif organizasyon`} tone="sky" />
-            <SummaryCard label="Aylık Gelir" value={currency.format(summary?.monthly_revenue ?? 0)} detail="Aktif + trial ürün abonelikleri" tone="emerald" />
-            <SummaryCard label="Açık Tahsilat" value={currency.format(summary?.invoice_summary?.receivable_total ?? 0)} detail={`${summary?.invoice_summary?.overdue_count ?? 0} gecikmiş fatura`} tone="amber" />
-            <SummaryCard label="Toplanan Ödeme" value={currency.format(summary?.invoice_summary?.collected_total ?? 0)} detail={`${summary?.invoice_summary?.paid_count ?? 0} tam ödenmiş fatura`} tone="rose" />
+            <SummaryCard label="Ayl─▒k Gelir" value={currency.format(summary?.monthly_revenue ?? 0)} detail="Aktif + trial ├╝r├╝n abonelikleri" tone="emerald" />
+            <SummaryCard label="A├ğ─▒k Tahsilat" value={currency.format(summary?.invoice_summary?.receivable_total ?? 0)} detail={`${summary?.invoice_summary?.overdue_count ?? 0} gecikmi┼ş fatura`} tone="amber" />
+            <SummaryCard label="Toplanan ├ûdeme" value={currency.format(summary?.invoice_summary?.collected_total ?? 0)} detail={`${summary?.invoice_summary?.paid_count ?? 0} tam ├Âdenmi┼ş fatura`} tone="rose" />
           </section>
 
           <section className="control-strip panel">
             <div className="panel-head compact-head">
               <div>
                 <div className="eyebrow">Operasyon Kontrolleri</div>
-                <h3>Listeyi daralt, yeni açılışı gerektiğinde göster</h3>
+                <h3>Listeyi daralt, yeni a├ğ─▒l─▒┼ş─▒ gerekti─şinde g├Âster</h3>
               </div>
               <button type="button" className="secondary-button" onClick={() => setShowOnboarding((current) => !current)}>
-                {showOnboarding ? 'Yeni Kiralama Alanını Gizle' : 'Yeni Kiralama Aç'}
+                {showOnboarding ? 'Yeni Kiralama Alan─▒n─▒ Gizle' : 'Yeni Kiralama A├ğ'}
               </button>
             </div>
             <div className="toolbar-grid">
@@ -1380,9 +1475,9 @@ export default function App() {
               <label>
                 <span>Entegrasyon Durumu</span>
                 <select value={integrationFilter} onChange={(event) => setIntegrationFilter(event.target.value)}>
-                  <option value="all">Tümü</option>
-                  <option value="integration-healthy">Sağlıklı</option>
-                  <option value="integration-degraded">İzlenmeli</option>
+                  <option value="all">T├╝m├╝</option>
+                  <option value="integration-healthy">Sa─şl─▒kl─▒</option>
+                  <option value="integration-degraded">─░zlenmeli</option>
                   <option value="integration-offline">Sorun var</option>
                   <option value="inactive">Entegrasyon yok</option>
                   <option value="active">Sadece aktif organizasyon</option>
@@ -1390,7 +1485,7 @@ export default function App() {
               </label>
               <div className="toolbar-stat">
                 <strong>{filteredOrganizations.length}</strong>
-                <span>görünen organizasyon</span>
+                <span>g├Âr├╝nen organizasyon</span>
               </div>
             </div>
           </section>
@@ -1428,8 +1523,8 @@ export default function App() {
                 <div className="panel">
                   <div className="panel-head">
                     <div>
-                      <div className="eyebrow">Ürün Dağılımı</div>
-                      <h3>Şablon bazlı aktif gelir görünümü</h3>
+                      <div className="eyebrow">├£r├╝n Da─ş─▒l─▒m─▒</div>
+                      <h3>┼Şablon bazl─▒ aktif gelir g├Âr├╝n├╝m├╝</h3>
                     </div>
                   </div>
                   <div className="breakdown-list">
@@ -1444,29 +1539,29 @@ export default function App() {
                     ))}
                   </div>
                   <div className="invoice-summary-strip">
-                    <div><strong>{summary?.invoice_summary?.paid_count ?? 0}</strong><span>Ödenen</span></div>
-                    <div><strong>{summary?.invoice_summary?.unpaid_count ?? 0}</strong><span>Ödenmeyen</span></div>
-                    <div><strong>{summary?.invoice_summary?.overdue_count ?? 0}</strong><span>Gecikmiş</span></div>
+                    <div><strong>{summary?.invoice_summary?.paid_count ?? 0}</strong><span>├ûdenen</span></div>
+                    <div><strong>{summary?.invoice_summary?.unpaid_count ?? 0}</strong><span>├ûdenmeyen</span></div>
+                    <div><strong>{summary?.invoice_summary?.overdue_count ?? 0}</strong><span>Gecikmi┼ş</span></div>
                   </div>
                   <button type="button" className="secondary-button" onClick={() => exportBilling()} disabled={exportingScope === 'all'}>
-                    {exportingScope === 'all' ? 'CSV hazırlanıyor...' : 'Tüm Faturaları CSV Dışa Aktar'}
+                    {exportingScope === 'all' ? 'CSV haz─▒rlan─▒yor...' : 'T├╝m Faturalar─▒ CSV D─▒┼şa Aktar'}
                   </button>
                 </div>
                 <div className="panel panel-form-shell">
                   <div className="panel-head compact-head">
                     <div>
                       <div className="eyebrow">Yeni Kiralama</div>
-                      <h3>Yeni tenant açılışını ikincil akışa aldık</h3>
+                      <h3>Yeni tenant a├ğ─▒l─▒┼ş─▒n─▒ ikincil ak─▒┼şa ald─▒k</h3>
                     </div>
-                    <span className={`status-pill ${showOnboarding ? 'active' : 'inactive'}`}>{showOnboarding ? 'Açık' : 'Gizli'}</span>
+                    <span className={`status-pill ${showOnboarding ? 'active' : 'inactive'}`}>{showOnboarding ? 'A├ğ─▒k' : 'Gizli'}</span>
                   </div>
-                  <p className="panel-copy">Ana operasyon görünümü sabit kalsın diye onboarding formu ihtiyaç halinde genişletiliyor.</p>
+                  <p className="panel-copy">Ana operasyon g├Âr├╝n├╝m├╝ sabit kals─▒n diye onboarding formu ihtiya├ğ halinde geni┼şletiliyor.</p>
                   {showOnboarding ? (
                     <OnboardingForm templates={templates} plans={plans} onCreate={onboardOrganization} isSaving={onboardingPending} />
                   ) : (
                     <div className="empty-compact-state">
                       <strong>Yeni kiralama formu gizli</strong>
-                      <span>Yeni organizasyon açacağınız zaman üstteki butonla görünür yapabilirsiniz.</span>
+                      <span>Yeni organizasyon a├ğaca─ş─▒n─▒z zaman ├╝stteki butonla g├Âr├╝n├╝r yapabilirsiniz.</span>
                     </div>
                   )}
                 </div>
@@ -1478,7 +1573,7 @@ export default function App() {
             <div className="panel-head">
               <div>
                 <div className="eyebrow">Organizasyonlar</div>
-                <h3>Masaüstü odaklı liste görünümü</h3>
+                <h3>Masa├╝st├╝ odakl─▒ liste g├Âr├╝n├╝m├╝</h3>
               </div>
             </div>
             <div className="org-table-shell">
@@ -1486,11 +1581,11 @@ export default function App() {
                 <thead>
                   <tr>
                     <th>Organizasyon</th>
-                    <th>İletişim</th>
+                    <th>─░leti┼şim</th>
                     <th>Abonelik</th>
                     <th>Entegrasyon</th>
-                    <th>Aylık Gelir</th>
-                    <th>Açık Tahsilat</th>
+                    <th>Ayl─▒k Gelir</th>
+                    <th>A├ğ─▒k Tahsilat</th>
                     <th>Durum</th>
                   </tr>
                 </thead>
@@ -1513,7 +1608,7 @@ export default function App() {
                               <span>{organization.contact_phone || 'Telefon yok'}</span>
                             </div>
                           </td>
-                          <td>{organization.subscriptions.length} ürün</td>
+                          <td>{organization.subscriptions.length} ├╝r├╝n</td>
                           <td>
                             <span className={`status-pill ${integrationSummary.tone}`}>{integrationSummary.label}</span>
                           </td>
@@ -1541,8 +1636,8 @@ export default function App() {
                     <tr>
                       <td colSpan="7">
                         <div className="empty-compact-state inline-empty-state">
-                          <strong>Eşleşen organizasyon yok</strong>
-                          <span>Arama veya filtreyi gevşetip tekrar deneyin.</span>
+                          <strong>E┼şle┼şen organizasyon yok</strong>
+                          <span>Arama veya filtreyi gev┼şetip tekrar deneyin.</span>
                         </div>
                       </td>
                     </tr>
