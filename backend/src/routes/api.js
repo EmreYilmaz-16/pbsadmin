@@ -114,6 +114,18 @@ const mobilKiraTakipProvisioningConfig = {
   password: String(process.env.MOBILKIRATAKIP_PLATFORM_PASSWORD || 'SuperAdmin123!').trim()
 };
 
+const mobilKiraTakipToLocalPropertyPlanCode = {
+  starter: 'property_starter',
+  pro: 'property_pro',
+  enterprise: 'property_enterprise'
+};
+
+const localToMobilKiraTakipPropertyPlan = {
+  property_starter: 'starter',
+  property_pro: 'pro',
+  property_enterprise: 'enterprise'
+};
+
 const createProvisioningError = (message, status = 400) => {
   const error = new Error(message);
   error.status = status;
@@ -285,6 +297,223 @@ const updateMobilKiraTakipAdminCredentials = async ({
   }
 
   return payload?.data || null;
+};
+
+const updateMobilKiraTakipOrganizationPlan = async ({
+  organizationId,
+  subscriptionPlan,
+  metricLimits,
+  note,
+  action
+}) => {
+  if (!organizationId) {
+    throw createProvisioningError('MobilKiraTakip tenant kimliği bulunamadı');
+  }
+
+  const session = await loginToMobilKiraTakipPlatform();
+  const response = await fetch(
+    buildRemoteUrl(session.baseUrl, `/api/v1/organizations/${organizationId}`, `/api/v1/organizations/${organizationId}`),
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        Authorization: `Bearer ${session.token}`
+      },
+      body: JSON.stringify({
+        subscription_plan: subscriptionPlan,
+        max_users: Number(metricLimits?.users || 0),
+        max_properties: Number(metricLimits?.properties || 0),
+        note,
+        action
+      })
+    }
+  );
+
+  const payload = await safeParseJson(response);
+  if (!response.ok || payload?.success === false) {
+    throw createProvisioningError(payload?.message || `MobilKiraTakip plan güncellemesi başarısız (${response.status})`, 502);
+  }
+
+  return payload?.data || null;
+};
+
+const listMobilKiraTakipPlanRequests = async () => {
+  const { rows } = await query(
+    `SELECT c.id AS connection_id,
+            c.organization_id,
+            s.id AS subscription_id,
+            s.plan_name,
+            s.pricing_plan_id,
+            s.metric_limits,
+            s.base_price,
+            c.metadata,
+            p.code AS product_code,
+            pp.code AS pricing_plan_code,
+            pp.name AS pricing_plan_name,
+            o.name AS organization_name,
+            o.slug AS organization_slug
+       FROM product_api_connections c
+       JOIN organizations o ON o.id = c.organization_id
+       JOIN product_templates p ON p.id = c.product_template_id
+       LEFT JOIN organization_subscriptions s
+         ON s.organization_id = c.organization_id
+        AND s.product_template_id = c.product_template_id
+       LEFT JOIN product_pricing_plans pp ON pp.id = s.pricing_plan_id
+      WHERE c.sync_type = 'mobilkiratakip_property_management'
+        AND c.metadata->'remote_tenant'->>'id' IS NOT NULL`
+  );
+
+  if (!rows.length) {
+    return [];
+  }
+
+  const session = await loginToMobilKiraTakipPlatform();
+  const response = await fetch(
+    buildRemoteUrl(session.baseUrl, '/api/v1/organizations/plan-requests?limit=100', '/api/v1/organizations/plan-requests'),
+    {
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${session.token}`
+      }
+    }
+  );
+
+  const payload = await safeParseJson(response);
+  if (!response.ok || payload?.success === false) {
+    throw createProvisioningError(payload?.message || `MobilKiraTakip plan talepleri alınamadı (${response.status})`, 502);
+  }
+
+  const connectionByRemoteTenantId = rows.reduce((accumulator, row) => {
+    const remoteTenantId = row.metadata?.remote_tenant?.id;
+    if (remoteTenantId) {
+      accumulator[remoteTenantId] = row;
+    }
+    return accumulator;
+  }, {});
+
+  return (payload?.data || [])
+    .filter((entry) => connectionByRemoteTenantId[entry.organization_id])
+    .map((entry) => {
+      const connection = connectionByRemoteTenantId[entry.organization_id];
+      return {
+        ...entry,
+        local_organization_id: connection.organization_id,
+        local_organization_name: connection.organization_name,
+        local_organization_slug: connection.organization_slug,
+        local_subscription_id: connection.subscription_id,
+        local_pricing_plan_code: connection.pricing_plan_code,
+        local_pricing_plan_name: connection.pricing_plan_name,
+        remote_tenant_id: entry.organization_id,
+        requested_local_pricing_plan_code: mobilKiraTakipToLocalPropertyPlanCode[entry.metadata?.requested_plan] || null
+      };
+    });
+};
+
+const loadSubscriptionForPlanChange = async (subscriptionId) => {
+  const { rows } = await query(
+    `SELECT s.id,
+            s.organization_id,
+            s.product_template_id,
+            s.plan_name,
+            s.status,
+            s.base_price,
+            s.currency,
+            s.billing_cycle_months,
+            s.pricing_plan_id,
+            s.metric_limits,
+            s.current_usage,
+            s.note,
+            p.code AS product_code,
+            p.name AS product_name,
+            c.id AS connection_id,
+            c.sync_type,
+            c.metadata AS integration_metadata,
+            pp.code AS pricing_plan_code
+       FROM organization_subscriptions s
+       JOIN product_templates p ON p.id = s.product_template_id
+       LEFT JOIN product_api_connections c
+         ON c.organization_id = s.organization_id
+        AND c.product_template_id = s.product_template_id
+       LEFT JOIN product_pricing_plans pp ON pp.id = s.pricing_plan_id
+      WHERE s.id = $1
+      LIMIT 1`,
+    [subscriptionId]
+  );
+
+  return rows[0] || null;
+};
+
+const updateSubscriptionPlan = async ({ subscriptionId, pricingPlanId, note, remoteDecision }) => {
+  const subscription = await loadSubscriptionForPlanChange(subscriptionId);
+  if (!subscription) {
+    throw createProvisioningError('Abonelik bulunamadı', 404);
+  }
+
+  const { rows } = await query(
+    `SELECT pp.id,
+            pp.code,
+            pp.name,
+            pp.monthly_price,
+            pp.currency,
+            pp.included_limits
+       FROM product_pricing_plans pp
+      WHERE pp.id = $1
+        AND pp.product_template_id = $2
+      LIMIT 1`,
+    [pricingPlanId, subscription.product_template_id]
+  );
+
+  if (!rows.length) {
+    throw createProvisioningError('Seçilen fiyat planı bulunamadı', 404);
+  }
+
+  const pricingPlan = rows[0];
+  const nextMetricLimits = pricingPlan.included_limits || {};
+  const effectiveNote = [subscription.note, note].filter(Boolean).join(' | ') || null;
+
+  if (
+    subscription.product_code === 'property_management'
+    && subscription.sync_type === 'mobilkiratakip_property_management'
+    && subscription.integration_metadata?.remote_tenant?.id
+  ) {
+    const remotePlan = localToMobilKiraTakipPropertyPlan[pricingPlan.code];
+    if (!remotePlan) {
+      throw createProvisioningError('Seçilen plan MobilKiraTakip planına eşlenemedi', 400);
+    }
+
+    await updateMobilKiraTakipOrganizationPlan({
+      organizationId: subscription.integration_metadata.remote_tenant.id,
+      subscriptionPlan: remotePlan,
+      metricLimits: nextMetricLimits,
+      note,
+      action: remoteDecision
+    });
+  }
+
+  const updateResult = await query(
+    `UPDATE organization_subscriptions
+        SET pricing_plan_id = $1,
+            plan_name = $2,
+            base_price = $3,
+            currency = $4,
+            metric_limits = $5,
+            note = $6,
+            updated_at = NOW()
+      WHERE id = $7
+      RETURNING *`,
+    [
+      pricingPlan.id,
+      pricingPlan.name,
+      Number(pricingPlan.monthly_price || 0),
+      pricingPlan.currency,
+      JSON.stringify(nextMetricLimits),
+      effectiveNote,
+      subscriptionId
+    ]
+  );
+
+  return updateResult.rows[0];
 };
 
 const loadIntegrationConnection = async (connectionId) => {
@@ -716,6 +945,18 @@ router.get('/organizations/overview', auth, async (_req, res) => {
   res.json({ success: true, data: rows });
 });
 
+router.get('/organizations/plan-requests', auth, async (_req, res) => {
+  try {
+    const requests = await listMobilKiraTakipPlanRequests();
+    return res.json({ success: true, data: requests });
+  } catch (error) {
+    if (error.status) {
+      return res.status(error.status).json({ success: false, message: error.message });
+    }
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 router.patch('/organizations/:id', auth, async (req, res) => {
   const payload = req.body || {};
   const updates = [];
@@ -1135,6 +1376,110 @@ router.patch('/subscriptions/:id/usage', auth, async (req, res) => {
   }
 
   return res.json({ success: true, data: rows[0] });
+});
+
+router.patch('/subscriptions/:id/plan', auth, async (req, res) => {
+  try {
+    const pricingPlanId = String(req.body.pricing_plan_id || '').trim();
+    const note = String(req.body.note || '').trim() || null;
+
+    if (!pricingPlanId) {
+      return res.status(400).json({ success: false, message: 'pricing_plan_id zorunlu' });
+    }
+
+    const updated = await updateSubscriptionPlan({
+      subscriptionId: req.params.id,
+      pricingPlanId,
+      note,
+      remoteDecision: 'manual_update'
+    });
+
+    return res.json({ success: true, data: updated });
+  } catch (error) {
+    if (error.status) {
+      return res.status(error.status).json({ success: false, message: error.message });
+    }
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.patch('/organizations/plan-requests/:requestId', auth, async (req, res) => {
+  try {
+    const action = String(req.body.action || '').trim();
+    const note = String(req.body.note || '').trim() || null;
+    const subscriptionId = String(req.body.subscription_id || '').trim();
+    const remoteOrganizationId = String(req.body.remote_organization_id || '').trim();
+    const requestedPlan = String(req.body.requested_plan || '').trim();
+
+    if (!['approve', 'reject'].includes(action)) {
+      return res.status(400).json({ success: false, message: 'Geçersiz talep kararı' });
+    }
+
+    const session = await loginToMobilKiraTakipPlatform();
+    const response = await fetch(
+      buildRemoteUrl(session.baseUrl, `/api/v1/organizations/plan-requests/${req.params.requestId}`, `/api/v1/organizations/plan-requests/${req.params.requestId}`),
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          Authorization: `Bearer ${session.token}`
+        },
+        body: JSON.stringify({ action, note })
+      }
+    );
+
+    const payload = await safeParseJson(response);
+    if (!response.ok || payload?.success === false) {
+      throw createProvisioningError(payload?.message || `MobilKiraTakip talep kararı başarısız (${response.status})`, 502);
+    }
+
+    let updatedSubscription = null;
+    if (action === 'approve' && subscriptionId) {
+      const pricingPlanCode = mobilKiraTakipToLocalPropertyPlanCode[requestedPlan];
+      if (!pricingPlanCode) {
+        throw createProvisioningError('Talep edilen plan yerel fiyat planına eşlenemedi', 400);
+      }
+
+      const localPlanResult = await query(
+        `SELECT pp.id
+           FROM product_pricing_plans pp
+           JOIN organization_subscriptions s ON s.product_template_id = pp.product_template_id
+          WHERE s.id = $1
+            AND pp.code = $2
+          LIMIT 1`,
+        [subscriptionId, pricingPlanCode]
+      );
+
+      if (!localPlanResult.rows.length) {
+        throw createProvisioningError('Yerel fiyat planı bulunamadı', 404);
+      }
+
+      updatedSubscription = await updateSubscriptionPlan({
+        subscriptionId,
+        pricingPlanId: localPlanResult.rows[0].id,
+        note: note || `MobilKiraTakip talebi ${action === 'approve' ? 'onaylandı' : 'reddedildi'}`,
+        remoteDecision: action
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        request_id: req.params.requestId,
+        action,
+        note,
+        remote_organization_id: remoteOrganizationId || null,
+        subscription: updatedSubscription,
+        remote_response: payload?.data || null
+      }
+    });
+  } catch (error) {
+    if (error.status) {
+      return res.status(error.status).json({ success: false, message: error.message });
+    }
+    return res.status(500).json({ success: false, message: error.message });
+  }
 });
 
 router.post('/subscriptions/:id/invoices', auth, async (req, res) => {

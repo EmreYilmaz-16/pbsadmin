@@ -158,6 +158,115 @@ function OrganizationEditor({ organization, onSave, isSaving }) {
   );
 }
 
+function SubscriptionPlanEditor({ subscription, plans, onSave, isSaving }) {
+  const [pricingPlanId, setPricingPlanId] = useState(subscription.pricing_plan?.id || '');
+  const [note, setNote] = useState('');
+
+  useEffect(() => {
+    setPricingPlanId(subscription.pricing_plan?.id || '');
+    setNote('');
+  }, [subscription]);
+
+  if (!plans.length) {
+    return null;
+  }
+
+  return (
+    <div className="editor-card editor-card-soft">
+      <div className="editor-head">
+        <div>
+          <div className="eyebrow">Paket Yönetimi</div>
+          <strong>{subscription.product_template.name} planını güncelle</strong>
+        </div>
+      </div>
+      <div className="form-grid two editor-form">
+        <label>
+          <span>Fiyat Planı</span>
+          <select value={pricingPlanId} onChange={(event) => setPricingPlanId(event.target.value)}>
+            <option value="">Plan seçin</option>
+            {plans.map((plan) => (
+              <option key={plan.id} value={plan.id}>{plan.name} • {currency.format(plan.monthly_price)}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span>İşlem Notu</span>
+          <input value={note} onChange={(event) => setNote(event.target.value)} placeholder="Opsiyonel açıklama" />
+        </label>
+      </div>
+      <div className="editor-note">Property Management ürününde bu işlem MobilKiraTakip tenant paketini de günceller.</div>
+      <div className="editor-actions">
+        <button
+          type="button"
+          className="secondary-button"
+          onClick={() => onSave(subscription.id, { pricing_plan_id: pricingPlanId, note })}
+          disabled={isSaving || !pricingPlanId || pricingPlanId === (subscription.pricing_plan?.id || '')}
+        >
+          {isSaving ? 'Paket güncelleniyor...' : 'Paketi Güncelle'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function PlanRequestPanel({ requests, onResolve, resolvingId }) {
+  const pendingCount = requests.filter((request) => request.status === 'pending').length;
+
+  return (
+    <div className="panel">
+      <div className="panel-head">
+        <div>
+          <div className="eyebrow">MobilKiraTakip Talepleri</div>
+          <h3>Paket yükseltme talepleri site admin paneline düşüyor</h3>
+        </div>
+      </div>
+      <div className="invoice-summary-strip">
+        <div><strong>{requests.length}</strong><span>Toplam talep</span></div>
+        <div><strong>{pendingCount}</strong><span>Bekleyen</span></div>
+        <div><strong>{requests.filter((request) => request.status === 'approved').length}</strong><span>Onaylanan</span></div>
+      </div>
+      <div className="invoice-list">
+        {requests.length ? requests.map((request) => (
+          <div className="invoice-row" key={request.id}>
+            <div>
+              <strong>{request.local_organization_name || request.organization_name}</strong>
+              <span>{request.metadata?.current_plan || '-'} → {request.metadata?.requested_plan || '-'}</span>
+              <span>{request.actor_name || '-'} • {request.actor_email || '-'} • {new Date(request.created_at).toLocaleString('tr-TR')}</span>
+              <span>{request.metadata?.note || request.description || 'Not yok'}</span>
+              {request.decision && <span>Karar: {request.decision.event_label} • {request.decision.note || 'Not yok'}</span>}
+            </div>
+            <div className="invoice-actions">
+              <span className={`status-pill ${request.status === 'approved' ? 'active' : request.status === 'rejected' ? 'inactive' : 'integration-pending'}`}>
+                {request.status === 'approved' ? 'Onaylandı' : request.status === 'rejected' ? 'Reddedildi' : 'Bekliyor'}
+              </span>
+              {request.status === 'pending' && (
+                <>
+                  <button
+                    type="button"
+                    className="ghost-button"
+                    onClick={() => onResolve(request, 'approve')}
+                    disabled={resolvingId === request.id}
+                  >
+                    {resolvingId === request.id ? 'İşleniyor...' : 'Onayla'}
+                  </button>
+                  <button
+                    type="button"
+                    className="ghost-button"
+                    onClick={() => onResolve(request, 'reject')}
+                    disabled={resolvingId === request.id}
+                  >
+                    {resolvingId === request.id ? 'İşleniyor...' : 'Reddet'}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )) : <div className="invoice-row"><div><strong>Talep yok</strong><span>MobilKiraTakip tarafından açılan paket yükseltme talebi henüz gelmedi.</span></div></div>}
+      </div>
+    </div>
+  );
+}
+
 function IntegrationEditor({ integration, onSave, isSaving }) {
   const [form, setForm] = useState({
     base_url: integration.base_url || '',
@@ -493,14 +602,17 @@ export default function App() {
   const [organizations, setOrganizations] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [plans, setPlans] = useState([]);
+  const [planRequests, setPlanRequests] = useState([]);
   const [loading, setLoading] = useState(Boolean(token));
   const [error, setError] = useState('');
   const [usageDrafts, setUsageDrafts] = useState({});
   const [savingOrganizationId, setSavingOrganizationId] = useState('');
   const [savingIntegrationId, setSavingIntegrationId] = useState('');
   const [savingSubscriptionId, setSavingSubscriptionId] = useState('');
+  const [savingPlanSubscriptionId, setSavingPlanSubscriptionId] = useState('');
   const [probingConnectionId, setProbingConnectionId] = useState('');
   const [syncingConnectionId, setSyncingConnectionId] = useState('');
+  const [resolvingPlanRequestId, setResolvingPlanRequestId] = useState('');
   const [onboardingPending, setOnboardingPending] = useState(false);
   const [invoiceActionId, setInvoiceActionId] = useState('');
   const [exportingScope, setExportingScope] = useState('');
@@ -522,18 +634,20 @@ export default function App() {
     setLoading(true);
     setError('');
     try {
-      const [me, dashboard, overview, productTemplates, catalogPlans] = await Promise.all([
+      const [me, dashboard, overview, productTemplates, catalogPlans, remotePlanRequests] = await Promise.all([
         authorizedRequest('/auth/me'),
         authorizedRequest('/dashboard/summary'),
         authorizedRequest('/organizations/overview'),
         authorizedRequest('/product-templates'),
-        authorizedRequest('/catalog/plans')
+        authorizedRequest('/catalog/plans'),
+        authorizedRequest('/organizations/plan-requests')
       ]);
       setUser(me.data);
       setSummary(dashboard.data);
       setOrganizations(overview.data);
       setTemplates(productTemplates.data);
       setPlans(catalogPlans.data);
+      setPlanRequests(remotePlanRequests.data);
       const draftMap = {};
       overview.data.forEach((organization) => {
         organization.subscriptions.forEach((subscription) => {
@@ -707,6 +821,50 @@ export default function App() {
     setOrganizations([]);
     setTemplates([]);
     setPlans([]);
+    setPlanRequests([]);
+  };
+
+  const saveSubscriptionPlan = async (subscriptionId, payload) => {
+    setSavingPlanSubscriptionId(subscriptionId);
+    setError('');
+    try {
+      await authorizedRequest(`/subscriptions/${subscriptionId}/plan`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload)
+      });
+      await bootstrap();
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setSavingPlanSubscriptionId('');
+    }
+  };
+
+  const resolvePlanRequest = async (request, action) => {
+    const note = window.prompt(action === 'approve' ? 'Onay notu' : 'Red nedeni', '') ?? null;
+    if (note === null) {
+      return;
+    }
+
+    setResolvingPlanRequestId(request.id);
+    setError('');
+    try {
+      await authorizedRequest(`/organizations/plan-requests/${request.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          action,
+          note,
+          subscription_id: request.local_subscription_id,
+          remote_organization_id: request.remote_tenant_id,
+          requested_plan: request.metadata?.requested_plan || ''
+        })
+      });
+      await bootstrap();
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setResolvingPlanRequestId('');
+    }
   };
 
   const createInvoice = async (subscriptionId) => {
@@ -917,6 +1075,8 @@ export default function App() {
             </div>
           </section>
 
+          <PlanRequestPanel requests={planRequests} onResolve={resolvePlanRequest} resolvingId={resolvingPlanRequestId} />
+
           <section className="panel org-table-panel">
             <div className="panel-head">
               <div>
@@ -998,6 +1158,13 @@ export default function App() {
                                       onChange={handleUsageChange}
                                       onSave={saveUsage}
                                       isSaving={savingSubscriptionId === subscription.id}
+                                    />
+
+                                    <SubscriptionPlanEditor
+                                      subscription={subscription}
+                                      plans={plans.filter((plan) => plan.product_template_id === subscription.product_template.id)}
+                                      onSave={saveSubscriptionPlan}
+                                      isSaving={savingPlanSubscriptionId === subscription.id}
                                     />
 
                                     {subscription.integration && (
