@@ -235,6 +235,10 @@ select:focus {
   padding: 24px;
 }
 
+.org-table-panel {
+  margin-top: 24px;
+}
+
 .panel-form {
   align-self: start;
 }
@@ -315,6 +319,82 @@ select:focus {
 
 .org-list {
   margin-top: 24px;
+}
+
+.org-table-shell {
+  margin-top: 18px;
+  overflow-x: auto;
+}
+
+.org-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 960px;
+}
+
+.org-table th,
+.org-table td {
+  padding: 16px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.org-table th {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+
+.org-table tbody tr:not(.org-detail-row):hover {
+  background: rgba(17, 75, 95, 0.04);
+}
+
+.org-table-primary {
+  display: grid;
+  gap: 4px;
+}
+
+.org-table-primary strong {
+  font-size: 15px;
+}
+
+.org-table-primary span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.org-detail-row td {
+  padding: 0 0 18px;
+  border-bottom: none;
+}
+
+.org-details {
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: rgba(17, 75, 95, 0.035);
+  overflow: hidden;
+}
+
+.org-details summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 18px 20px;
+  font-weight: 800;
+  color: var(--brand);
+}
+
+.org-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.org-details[open] summary {
+  border-bottom: 1px solid var(--line);
+}
+
+.org-details .subscription-stack {
+  padding: 20px;
 }
 
 .subscription-stack {
@@ -480,5 +560,9 @@ select:focus {
 
   .invoice-summary-strip {
     grid-template-columns: 1fr;
+  }
+
+  .org-table {
+    min-width: 0;
   }
 }
