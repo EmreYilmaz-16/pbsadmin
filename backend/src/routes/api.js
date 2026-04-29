@@ -613,7 +613,7 @@ router.post('/onboarding', auth, async (req, res) => {
         starts_at,
         renewal_at,
         note
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,NOW(),NOW() + make_interval(months => $8::int),$11)
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,NOW(),NOW() + ($8::int * INTERVAL '1 month'),$11)
         RETURNING *`,
       [
         organization.id,
